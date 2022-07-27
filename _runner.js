@@ -18,11 +18,12 @@ export async function main(ns) {
         // "avmnite-02h", // 213 hack, 2 ports <- phantasy
 
     ]
+    let execServer = ns.getHostname()
     let threads = ns.args[0]
     let moneyThreshold = ns.args[1]
     for (let server of servers) {
-        if (ns.getServer(server).hackDifficulty < ns.getHackingLevel() && ns.getScriptRam("_hack.js") < ns.getServerMaxRam("home") - ns.getServerUsedRam("home")) {
-            ns.exec("_hack.js", "home", threads , server, moneyThreshold)
+        if (ns.getServer(server).hackDifficulty < ns.getHackingLevel() && ns.getScriptRam("_hack.js") < ns.getServerMaxRam(execServer) - ns.getServerUsedRam(execServer)) {
+            ns.exec("_hack.js", execServer, threads , server, moneyThreshold)
             await ns.sleep(500)
         }
     }
