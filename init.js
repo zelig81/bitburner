@@ -4,8 +4,9 @@ export async function main(ns) {
     "_runner.js",
     "_hack.js"
   ]
-  files.map(async (file) => {
+  for (let file of files) {
     await ns.wget(`https://raw.githubusercontent.com/zelig81/bitburner/main/${file}`, file);
-  })
+    ns.alert(`file ${file} downloaded...`)
+  }
 
 }
