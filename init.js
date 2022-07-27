@@ -4,7 +4,7 @@ export async function main(ns) {
     "_runner.js",
     "_hack.js"
   ]
-  files.map((file) => {
+  files.map(async (file) => {
     await ns.wget(`https://raw.githubusercontent.com/zelig81/bitburner/main/${file}`, file);
   })
 
