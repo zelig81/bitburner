@@ -12,12 +12,12 @@ export async function main(ns) {
       values.push(ns.heart.break());
       headers.push("ScrExp");
       values.push(ns.getScriptExpGain().toPrecision(5) + '/sec');
-    headers.push("ScrInc");
+      headers.push("ScrInc");
       values.push(ns.getScriptIncome()[0].toPrecision(5) + '/sec');
 
       hook0.innerText = headers.join(" \n");
       hook1.innerText = values.join("\n");
-    hook3.innerText = values.join("\n");
+      hook3.innerText = values.join("\n");
     } catch (err) {
       ns.print("ERROR: Update Skipped: " + String(err));
     }
