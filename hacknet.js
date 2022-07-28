@@ -127,7 +127,7 @@ export async function main(ns) {
     if (cost >= costLimit[stat]) {
 
       node["max" + stat] = true;
-
+      log(`cannot upgrade [${stat} on the node [${node.index}]]`)
       return false;
     }
 
