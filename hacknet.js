@@ -19,12 +19,12 @@ export async function main(ns) {
 
     let balance = getBalance();
 
-    if (canBuyNode(balance)) {
+    let nodes = getHackNetNodes();
+    if (nodes.length < poolSize && canBuyNode(balance)) {
 
       ns.hacknet.purchaseNode();
     }
-
-    let nodes = getHackNetNodes();
+    nodes = getHackNetNodes();
 
     nodes.forEach((node) => {
 
@@ -45,23 +45,17 @@ export async function main(ns) {
     return ns.getServerMoneyAvailable("home");
   }
 
-
   function canBuyNode(balance) {
-
     let price = ns.hacknet.getPurchaseNodeCost();
-
     return balance > price;
-
   }
 
   function log(str) {
-
     if (debug) {
       ns.tprint(str);
     } else {
       ns.print(str);
     }
-
   }
 
   function getHackNetNodes() {
@@ -107,15 +101,10 @@ export async function main(ns) {
     ];
 
     stats.forEach((stat) => {
-
       if (canUpgrade(stat, node, balance)) {
-
         log("UPGRADING " + stat + " ON " + node.node.name);
-
         ns.hacknet["upgrade" + stat](node.index);
-
       }
-
     });
 
   }

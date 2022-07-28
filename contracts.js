@@ -1,30 +1,29 @@
-/** @param {NS} ns */
+/** @param {NS} ns **/
 export async function main(ns) {
-  const servers = [
-    "foodnstuff", // 1 hack, 0 port <- 0
-    "n00dles", // 1 hack, 0 port <- 0
-    "sigma-cosmetics", // 5 hack, 0 port <- 0
-    "joesguns", // 10 hack, 0 port <- 0
-    "nectar-net", // 20 hack, 0 port, <- iron-gym
-    "hong-fang-tea", // 30 hack, 0 port <- 0
-    "harakiri-sushi", // 40 hack, 0 port <- 0
-    "neo-net", // 50 hack, 1 port <- nectar-net
-    "zer0", // 75 hack, 1 ports <- iron-gym
-    "max-hardware", // 80 hack, 1 ports <- harakiri-sushi
-    "iron-gym", // 100 hack, 1 port <- 0
-    "phantasy", // 100 hack, 2 ports <- csec <- foodstuff
-    "silver-helix", // 150 hack, 2 ports <- csec <- foodstuff
-    "omega-net", // 198 hack, 2 ports <- zer0
-    // "avmnite-02h", // 213 hack, 2 ports <- phantasy
-
-  ]
-  let execServer = ns.getHostname()
-  let threads = ns.args[0]
-  let moneyThreshold = ns.args[1]
-  for (let server of servers) {
-    if (ns.getServer(server).hackDifficulty < ns.getHackingLevel() && ns.getScriptRam("_hack.js") < ns.getServerMaxRam(execServer) - ns.getServerUsedRam(execServer)) {
-      ns.exec("_hack.js", execServer, threads , server, moneyThreshold)
-      await ns.sleep(500)
+    var serverList;
+    var filename = "contract.txt"
+    async function scanServers() {//Finds all servers
+        serverList = ns.scan("home"); let serverCount = [serverList.length, 0]; let depth = 0; let checked = 0; let scanIndex = 0;
+        while (scanIndex <= serverCount[depth] - 1) {
+            let results = ns.scan(serverList[checked]); checked++;
+            for (let j = 0; j <= results.length - 1; j++) {
+                if (results[j] != "home" && !serverList.includes(results[j])) {
+                    serverList.push(results[j]); serverCount[depth + 1]++
+                }
+            }
+            if (scanIndex == serverCount[depth] - 1) { scanIndex = 0; depth++; serverCount.push(0) } else { scanIndex++ };
+        }
     }
-  }
+
+    while (true) {
+        await scanServers()
+        await ns.write(filename, "", "w");
+        for (let j =0 ; j<serverList.length; j++) {
+            var files = ns.ls(serverList[j], "cct")
+            if (files.length > 0) {
+                await ns.write(filename, serverList[j] + " -> " + files[0] + "\n", "a");
+            }
+        }
+        await ns.asleep(1000)
+    }
 }
