@@ -5,7 +5,12 @@ export async function main(ns) {
 
   ns.disableLog("ALL");
 
-  const debug = ns.args[1] || false;
+  const debug = ns.args[4] || false;
+  const costLimit = {
+    "Level": ( ns.args[1] || 500000),
+    "Ram": ( ns.args[2] || Infinity),
+    "Core": ( ns.args[3] || 3000000),
+  };
   const poolSize = ns.args[0] || 100;
 
   let fullNodes = 0;
@@ -119,7 +124,7 @@ export async function main(ns) {
 
     let cost = ns.hacknet["get" + stat + "UpgradeCost"](node.index);
 
-    if (cost == Infinity) {
+    if (cost >= costLimit[stat]) {
 
       node["max" + stat] = true;
 

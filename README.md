@@ -38,3 +38,4 @@ run _runner.js 22 500000
     - wget init.js
     - run init.js
     - run the script with chosen parameters
+- fix in hacknet.js cap of $ for upgrade nodes=3m/levels=.5m/ram=no/cpu=3m
