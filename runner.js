@@ -31,8 +31,8 @@ export async function main(ns) {
   let threads = ns.args[0]
   let moneyThreshold = ns.args[1]
   for (let server of servers) {
-    if (ns.getServer(server).hackDifficulty < ns.getHackingLevel() && ns.getScriptRam("hack.js") < ns.getServerMaxRam(execServer) - ns.getServerUsedRam(execServer)) {
-      ns.exec("hack.js", execServer, threads , server, moneyThreshold)
+    if (ns.getServer(server).hackDifficulty < ns.getHackingLevel() && ns.getScriptRam("_hack.js") < ns.getServerMaxRam(execServer) - ns.getServerUsedRam(execServer)) {
+      ns.exec("_hack.js", execServer, threads , server, moneyThreshold)
       await ns.sleep(500)
     }
   }

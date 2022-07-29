@@ -14,6 +14,11 @@ run _runner.js 22 500000
 
 ## todo
 
+- add scheduler:
+  - runner (raise limits?)
+  - customUI
+  - contracts
+  -
 - make own:
   - hacknet
   - netcrawler
@@ -39,3 +44,12 @@ run _runner.js 22 500000
     - run init.js
     - run the script with chosen parameters
 - fix in hacknet.js cap of $ for upgrade nodes=3m/levels=.5m/ram=no/cpu=3m
+
+## numbers
+
+### hacknet
+
+- max level from 1 cost: 24m
+- max ram from 1Gi: 4.7m
+- max core from 1: 345m
+- outcome from fully upgraded node: 26k/sec == 93m/hour
