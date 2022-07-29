@@ -7,6 +7,6 @@ export async function main(ns) {
   }
   let execServer = ns.getHostname()
   for (let script in scripts) {
-    ns.exec(script, execServer, 1, scripts[script])
+    ns.exec(script, execServer, 1, ...scripts[script])
   }
 }
