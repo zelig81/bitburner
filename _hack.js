@@ -11,6 +11,9 @@ export async function main(ns) {
   if (ns.fileExists("FTPCrack.exe", "home")) {
     ns.ftpcrack(target);
   }
+  if (ns.fileExists("relaySMTP.exe", "home")) {
+    ns.relaysmtp(target);
+  }
   ns.nuke(target);
 
   while(true) {
