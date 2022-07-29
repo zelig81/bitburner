@@ -9,7 +9,7 @@ export async function main(ns) {
     "interface.js",
     "netcrawler.js",
     "runner.js",
-    "scheduler.js",
+    "sscheduler.js",
   ]
   for (let file of files) {
     await ns.wget(`https://raw.githubusercontent.com/zelig81/bitburner/main/${file}`, file);
