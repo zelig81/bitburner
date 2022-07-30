@@ -7,6 +7,7 @@ export async function main(ns) {
     "_hack.js",
     "hacknet.js",
     "interface.js",
+    "modules.js",
     "netcrawler.js",
     "runner.js",
     "scheduler.js",
