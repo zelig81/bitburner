@@ -11,6 +11,7 @@ export async function main(ns) {
     "netcrawler.js",
     "runner.js",
     "scheduler.js",
+    "sticks.js",
   ]
   for (let file of files) {
     await ns.wget(`https://raw.githubusercontent.com/zelig81/bitburner/main/${file}`, file);
