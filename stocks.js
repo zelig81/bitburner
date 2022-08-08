@@ -50,6 +50,15 @@ export async function main(ns) {
         else if (ns.stock.getForecast(stock) >= FORECAST_THRESH && portfolio[i].shares < ns.stock.getMaxShares(stock)) {   // if the forecast is better than threshold and we own less then max shares then BUY
           buyStock(stock);
         }
+        // send stock market manipulation orders to hack manager
+        var growStockPort = ns.getPortHandle(1); // port 1 is grow
+        // var hackStockPort = ns.getPortHandle(2); // port 2 is hack
+        if (growStockPort.empty() /* && hackStockPort.empty()*/) {
+          // only write to ports if empty and it is stock in long?
+          ns.print("INFO grow " + stock);
+          growStockPort.write(getSymServer(stock));
+        }
+
       }
 
       else if (ns.stock.getForecast(stock) >= FORECAST_THRESH) {   // if the forecast is better than threshold and we don't own then BUY
@@ -94,5 +103,47 @@ export async function main(ns) {
 
     if (calcShares > maxShares) { return maxShares }
     else { return calcShares }
+  }
+
+
+  function getSymServer(sym) {
+    const symServer = {
+      "WDS": "",
+      "ECP": "ecorp",
+      "MGCP": "megacorp",
+      "BLD": "blade",
+      "CLRK": "clarkinc",
+      "OMTK": "omnitek",
+      "FSIG": "4sigma",
+      "KGI": "kuai-gong",
+      "DCOMM": "defcomm",
+      "VITA": "vitalife",
+      "ICRS": "icarus",
+      "UNV": "univ-energy",
+      "AERO": "aerocorp",
+      "SLRS": "solaris",
+      "GPH": "global-pharm",
+      "NVMD": "nova-med",
+      "LXO": "lexo-corp",
+      "RHOC": "rho-construction",
+      "APHE": "alpha-ent",
+      "SYSC": "syscore",
+      "CTK": "comptek",
+      "NTLK": "netlink",
+      "OMGA": "omega-net",
+      "JGN": "joesguns",
+      "SGC": "sigma-cosmetics",
+      "CTYS": "catalyst",
+      "MDYN": "microdyne",
+      "TITN": "titan-labs",
+      "FLCM": "fulcrumtech",
+      "STM": "stormtech",
+      "HLS": "helios",
+      "OMN": "omnia",
+      "FNS": "foodnstuff"
+    }
+
+    return symServer[sym];
+
   }
 }

@@ -13,7 +13,7 @@ export async function main(ns) {
   var exclude = [''] //Servers names that won't be used as hosts or deleted
 
   var servers; var hosts; var targets; var exes; var tarIndex; var loop; var hType; var tmp; var act;
-  var netManager = false; var serverManager = false;
+  var netManager = false; var serverManager = false; var contractsManager = false; var solvedContracts = 0
   var cycle = [0, '▄', '█', '▀', '█'];
   if (false) { brutessh(); ftpcrack(); relaysmtp(); httpworm(); sqlinject() }
 
@@ -45,10 +45,11 @@ export async function main(ns) {
     ns.print(`║ EXE ${exes.length}/5 ║ HOSTS ${hosts.length} ║ TARGETS ${targets.length}`)
     ns.print('╠═════════════════════════════════════════')
 
-    if (netManager || serverManager) {
+    if (netManager || serverManager || contractsManager) {
       tmp = '║ MANAGER'
       if (netManager) { tmp += ' ║ HN-Nodes ' + ns.hacknet.numNodes() }
       if (serverManager) { tmp += ' ║ P-Servers ' + ns.getPurchasedServers().length }
+      if (contractsManager) { tmp += ' ║ Solved Contracts ' + solvedContracts }
       ns.print(tmp + '\n╠═════════════════════════════════════════')
     }
   }
@@ -122,6 +123,19 @@ export async function main(ns) {
       }
     }
   }
+  contractsManager = await ns.prompt('Activate Solving Contracts?');
+  async function solveContracts() {
+    const solveContractsScript = "solve-contracts.js";
+    const solveContractsScriptRam = 22;
+    const homeMaxRam = ns.getServerMaxRam("home");
+    const homeUsedRam = ns.getServerUsedRam("home")
+    const homeFreeRam = homeMaxRam - homeUsedRam;
+    if (homeFreeRam > solveContractsScriptRam) {
+      //ns.print("INFO checking for contracts to solve");
+      ns.exec(solveContractsScript, "home");
+    }
+
+  }
   //MODULES ABOVE HERE
   ns.tail()
   while (true) {//Keeps everything running once per second
@@ -132,6 +146,7 @@ export async function main(ns) {
     await hackAll()
     if (netManager) { await hnManager() }
     if (serverManager) { await pServerManager() }
+    if (contractsManager) { await solveContracts() }
     log()
     await ns.asleep(1000)
   }
