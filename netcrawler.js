@@ -29,7 +29,7 @@ function crawl(ns, node, nodeMap) {
 
 /** @param {NS} ns **/
 function printMap(ns, node, nodeMap, indent) {
-  ns.tprintf(`${indent}${node.name}(${ns.hasRootAccess(node.name) ? "Y" : "N"}|${ns.getServerNumPortsRequired(node.name)}|${ns.getServerRequiredHackingLevel(node.name)}|${ns.getServerSecurityLevel(node.name)}|${ns.getServerMoneyAvailable(node.name)})`);
+  ns.tprintf(`${indent}${node.name}(${ns.hasRootAccess(node.name) ? "Y" : "N"}|${ns.getServerNumPortsRequired(node.name)}|${ns.getServerRequiredHackingLevel(node.name)}|${ns.nFormat(ns.getServerMoneyAvailable(node.name), "0.0a")})`);
   nodeMap.delete(node.name);
   indent = adjustIndent(indent, node, nodeMap);
   printIndent(ns, indent, node);
