@@ -7,9 +7,9 @@
 const shortAvailable = true;
 
 const commission = 100000;
-const FORECAST_THRESH_BUY = 0.6;
+const FORECAST_THRESH_BUY = 0.57;
 const FORECAST_THRESH_SELL = 0.47;
-const PROFIT_THRESH_SELL = - 0.03;
+const PROFIT_THRESH_SELL = - 0.02;
 
 export async function main(ns) {
   ns.disableLog("ALL");
@@ -46,7 +46,7 @@ function tendStocks(ns) {
       else {
         // sell due to possibility to loss profits
         longStocks.add(stock.sym);
-        ns.print(`INFO ${ stock.summary } LONG ${ ns.nFormat(stock.cost + stock.profit, "0.0a") } ${ ns.nFormat(100 * stock.profit / stock.cost, "0.00") }%`);
+        ns.print(`INFO ${ stock.summary } LONG ${ ns.nFormat(stock.cost + stock.profit, "$0.0a") }`);
         overallValue += (stock.cost + stock.profit);
       }
     }
@@ -64,7 +64,7 @@ function tendStocks(ns) {
       else {
         // sell due to possibility to loss profits
         shortStocks.add(stock.sym);
-        ns.print(`INFO ${ stock.summary } SHORT ${ ns.nFormat(stock.cost + stock.profit, "0.0a") } ${ ns.nFormat(100 * stock.profit / stock.cost, "0.00") }%`);
+        ns.print(`INFO ${ stock.summary } SHORT ${ ns.nFormat(stock.cost + stock.profit, "$0.0a") }`);
         overallValue += (stock.cost + stock.profit);
       }
     }
@@ -79,7 +79,7 @@ function tendStocks(ns) {
       if (money > 500 * commission) {
         const sharesToBuy = Math.min(stock.maxShares, Math.floor((money - commission) / stock.askPrice));
         if (ns.stock.buy(stock.sym, sharesToBuy) > 0) {
-          ns.print(`WARN ${ stock.summary } LONG BOUGHT ${ ns.nFormat(sharesToBuy, "$0.0a") }`);
+          ns.print(`WARN ${ stock.summary } LONG BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ns.nFormat(money, "$0.0a")}`);
         }
       }
     }
@@ -89,7 +89,7 @@ function tendStocks(ns) {
       if (money > 500 * commission) {
         const sharesToBuy = Math.min(stock.maxShares, Math.floor((money - commission) / stock.bidPrice));
         if (ns.stock.short(stock.sym, sharesToBuy) > 0) {
-          ns.print(`WARN ${ stock.summary } SHORT BOUGHT ${ ns.nFormat(sharesToBuy, "$0.0a") }`);
+          ns.print(`WARN ${ stock.summary } SHORT BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ns.nFormat(money, "$0.0a")}`);
         }
       }
     }
@@ -142,7 +142,7 @@ export function getAllStocks(ns) {
     var profitPotential = profitChance * (stock.volatility);
     stock.profitPotential = profitPotential;
 
-    stock.summary = `${ stock.sym }: F${ stock.forecast.toFixed(3) } ± V${ stock.volatility.toFixed(3) }`;
+    stock.summary = `${ stock.sym }: F${ stock.forecast.toFixed(3) } ± V${ stock.volatility.toFixed(3) }${ stock.cost != 0 ? " " + ns.nFormat(100 * stock.profit / stock.cost, "0.00") + "%" : "" }`;
     stocks.push(stock);
   }
   return stocks;
