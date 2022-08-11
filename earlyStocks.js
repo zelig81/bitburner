@@ -1,5 +1,4 @@
-// file: early-stock-trader.js
-
+// https://github.com/kamukrass/Bitburner/blob/develop/early-stock-trader.js
 // does not require 4s Market Data TIX API Access
 
 // defines if stocks can be shorted (see BitNode 8)
@@ -7,6 +6,7 @@ const shortAvailable = true;
 
 const commission = 100000;
 const samplingLength = 30;
+const moneyRatioAPIPurchase = 2
 
 function predictState(samples) {
   const limits = [null, null, null, null, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20];
@@ -35,12 +35,12 @@ function format(money) {
   const prefixes = ["", "k", "m", "b", "t", "q"];
   for (let i = 0; i < prefixes.length; i++) {
     if (Math.abs(money) < 1000) {
-      return `${Math.floor(money * 10) / 10}${prefixes[i]}`;
+      return `${ Math.floor(money * 10) / 10 }${ prefixes[i] }`;
     } else {
       money /= 1000;
     }
   }
-  return `${Math.floor(money * 10) / 10}${prefixes[prefixes.length - 1]}`;
+  return `${ Math.floor(money * 10) / 10 }${ prefixes[prefixes.length - 1] }`;
 }
 
 function posNegDiff(samples) {
@@ -55,6 +55,16 @@ function posNegRatio(samples) {
 
 export async function main(ns) {
   ns.disableLog("ALL");
+  ns.tail()
+
+  if (!ns.purchaseWseAccount() || !ns.purchaseTixApi()) {
+    while (ns.getServerMoneyAvailable('home') < 5200 * 1000 * 1000 * moneyRatioAPIPurchase) {
+      await ns.sleep(60000)
+    }
+    ns.purchaseWseAccount()
+    ns.purchaseTixApi()
+  }
+
   let symLastPrice = {};
   let symChanges = {};
   for (const sym of ns.stock.getSymbols()) {
@@ -64,6 +74,17 @@ export async function main(ns) {
 
   while (true) {
     await ns.sleep(2000);
+
+    if (ns.getServerMoneyAvailable('home') > 26 * 1000 * 1000 * 1000 * moneyRatioAPIPurchase) {
+      ns.purchase4SMarketData()
+      ns.purchase4SMarketDataTixApi()
+      if (shortAvailable) {
+        ns.exec("stockShorts.js", "home")
+      } else {
+        ns.exec("stocks.js", "home")
+      }
+      return
+    }
 
     if (symLastPrice['FSIG'] === ns.stock.getPrice('FSIG')) {
       continue;
@@ -113,11 +134,11 @@ export async function main(ns) {
           const sellPrice = ns.stock.sell(sym, longShares);
           if (sellPrice > 0) {
             sold = true;
-            ns.print(`INFO SOLD (long) ${sym}. Profit: ${format(profit)}`);
+            ns.print(`INFO SOLD (long) ${ sym }. Profit: ${ format(profit) }`);
           }
         } else {
           longStocks.add(sym);
-          ns.print(`${sym} (${ratio}): ${format(profit + cost)} / ${format(profit)} (${Math.round(profit / cost * 10000) / 100}%)`);
+          ns.print(`${ sym } (${ ratio }): ${ format(profit + cost) } / ${ format(profit) } (${ Math.round(profit / cost * 10000) / 100 }%)`);
         }
       }
       else if (shortShares > 0) {
@@ -127,11 +148,11 @@ export async function main(ns) {
           const sellPrice = ns.stock.sellShort(sym, shortShares);
           if (sellPrice > 0) {
             sold = true;
-            ns.print(`INFO SOLD (short) ${sym}. Profit: ${format(profit)}`);
+            ns.print(`INFO SOLD (short) ${ sym }. Profit: ${ format(profit) }`);
           }
         } else {
           shortStocks.add(sym);
-          ns.print(`${sym} (${ratio}): ${format(profit + cost)} / ${format(profit)} (${Math.round(profit / cost * 10000) / 100}%)`);
+          ns.print(`${ sym } (${ ratio }): ${ format(profit + cost) } / ${ format(profit) } (${ Math.round(profit / cost * 10000) / 100 }%)`);
         }
       }
       else if (state > 0) {
@@ -146,13 +167,13 @@ export async function main(ns) {
           const sharesToBuy = Math.min(ns.stock.getMaxShares(sym), Math.floor((money - commission) / askPrice));
           if (ns.stock.buy(sym, sharesToBuy) > 0) {
             longStocks.add(sym);
-            ns.print(`INFO BOUGHT (long) ${sym}.`);
+            ns.print(`INFO BOUGHT (long) ${ sym }.`);
           }
         } else if (state < 0 && !sold && shortAvailable) {
           const sharesToBuy = Math.min(ns.stock.getMaxShares(sym), Math.floor((money - commission) / bidPrice));
           if (ns.stock.short(sym, sharesToBuy) > 0) {
             shortStocks.add(sym);
-            ns.print(`INFO BOUGHT (short) ${sym}.`);
+            ns.print(`INFO BOUGHT (short) ${ sym }.`);
           }
         }
 
@@ -165,11 +186,11 @@ export async function main(ns) {
     if (growStockPort.empty() && hackStockPort.empty()) {
       // only write to ports if empty
       for (const sym of longStocks) {
-        //ns.print("INFO grow " + sym);
+        ns.print("INFO grow " + sym);
         growStockPort.write(getSymServer(sym));
       }
       for (const sym of shortStocks) {
-        //ns.print("INFO hack " + sym);
+        ns.print("INFO hack " + sym);
         hackStockPort.write(getSymServer(sym));
       }
     }

@@ -35,15 +35,15 @@ export async function main(ns) {
 
   function log() {
     if (cycle[0] >= 4) { cycle[0] = 0 }; cycle[0]++; ns.clearLog();
-    ns.print('╔═══╦════════════════════════════════════╗')
-    tmp = targets.slice(0, 12)
-    ns.print(`║ ${cycle[cycle[0]]} ║ HIGH PROFIT            BALANCE     ║`)
+    ns.print('╔═══╦════════════════════════════════════════╗')
+    tmp = targets.slice(0, 24)
+    ns.print(`║ ${cycle[cycle[0]]} ║ HIGH PROFIT TARGETS            BALANCE ║`)
     for (let t of tmp) {
-      ns.print(`║ ${act[t[1]]} ║ ${str(t[1])}` + `${ns.nFormat(info('MA', t[1]), '0a')} / ${ns.nFormat(info('MM', t[1]), '0a')} : ${ns.nFormat(info('MA', t[1]) / info('MM', t[1]), '0%')} ║`.padStart(36 - str(t[1]).length))
+      ns.print(`║ ${act[t[1]]} ║ ${str(t[1])}` + `${ns.nFormat(info('MA', t[1]), '0a')} / ${ns.nFormat(info('MM', t[1]), '0a')} : ${ns.nFormat(info('MA', t[1]) / info('MM', t[1]), '0%')}    ║`.padStart(40 - str(t[1]).length))
     }
-    ns.print('╠═══╩════════════════════════════════════╝')
-    ns.print(`║ EXE ${exes.length}/5 ║ HOSTS ${hosts.length} ║ TARGETS ${targets.length}`)
-    ns.print('╠═════════════════════════════════════════')
+    ns.print('╠═══╩════════════════════════════════════════╝')
+    ns.print(`║ EXE ${exes.length}/5 ║ HOSTS ${hosts.length} ║ TARGETS ${targets.length}║`)
+    ns.print('╠════════════════════════════════════════════╝')
 
     if (netManager || serverManager || contractsManager) {
       tmp = '║ MANAGER'
@@ -98,7 +98,7 @@ export async function main(ns) {
     }
   }
   //MODULES BELOW HERE
-  netManager = await ns.prompt('Activate Hacknet Manager?');
+  // netManager = await ns.prompt('Activate Hacknet Manager?');
   async function hnManager() {
     if (checkM(ns.hacknet.getPurchaseNodeCost(), 20)) { ns.hacknet.purchaseNode() }
     for (let i = 0; i < ns.hacknet.numNodes(); i++) {
@@ -109,12 +109,12 @@ export async function main(ns) {
       }
     }
   }
-  serverManager = await ns.prompt('Activate Player Server Manager?');
+  // serverManager = await ns.prompt('Activate Player Server Manager?');
   async function pServerManager() {
     let ram = 0; let ramList = [8]; for (let num of ramList) {
       if (num <= 1048576 && checkM(ns.getPurchasedServerCost(num), 20)) { ramList.push(num * 2); ram = num; } else { break };
     }
-    function buyServer(r) { ns.purchaseServer('SERVER-' + ns.nFormat(r * 1000000000, '0.0b'), r) }
+    function buyServer(r) { ns.purchaseServer('SERVER-' + ns.nFormat(r * 2 ** 30, '0.0b'), r) }
     if (ns.getPurchasedServers().length < 25 && ram > 0) { buyServer(ram) }
     for (let i = ns.getPurchasedServers().length - 1; i >= 0; i--) {
       tmp = ns.getPurchasedServers()[i]
@@ -123,9 +123,9 @@ export async function main(ns) {
       }
     }
   }
-  contractsManager = await ns.prompt('Activate Solving Contracts?');
+  // contractsManager = await ns.prompt('Activate Solving Contracts?');
   async function solveContracts() {
-    const solveContractsScript = "solve-contracts.js";
+    const solveContractsScript = "solveСontracts.js";
     const solveContractsScriptRam = 22;
     const homeMaxRam = ns.getServerMaxRam("home");
     const homeUsedRam = ns.getServerUsedRam("home")
