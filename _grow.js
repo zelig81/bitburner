@@ -5,10 +5,9 @@ export async function main(ns) {
   const server = ns.args[0];
 
   if (ns.args.length >= 3) {
-    await ns.hack(server, { stock: ns.args[2] });
+    await ns.grow(server, { stock: ns.args[2] });
   }
   else {
-    await ns.hack(server);
+    await ns.grow(server);
   }
-
 }

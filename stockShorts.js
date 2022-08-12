@@ -9,7 +9,8 @@ const shortAvailable = true;
 const commission = 100000;
 const FORECAST_THRESH_BUY = 0.57;
 const FORECAST_THRESH_SELL = 0.47;
-const PROFIT_THRESH_SELL = - 0.02;
+const PROFIT_THRESH_SELL = - 0.015;
+const MONEY_THRESH = 10 * 1000000
 
 export async function main(ns) {
   ns.disableLog("ALL");
@@ -33,7 +34,7 @@ function tendStocks(ns) {
 
   for (const stock of stocks) {
     if (stock.longShares > 0) {
-      if (stock.forecast < FORECAST_THRESH_SELL || stock.profit / stock.cost < PROFIT_THRESH_SELL) {
+      if (stock.forecast < FORECAST_THRESH_SELL || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)) {
         // create list of long shares to continue to have
         const salePrice = ns.stock.sell(stock.sym, stock.longShares);
         const saleTotal = salePrice * stock.longShares;
@@ -51,12 +52,12 @@ function tendStocks(ns) {
       }
     }
     if (stock.shortShares > 0) {
-      if (stock.forecast > 1 - FORECAST_THRESH_SELL || stock.profit / stock.cost < PROFIT_THRESH_SELL) {
+      if (stock.forecast > 1 - FORECAST_THRESH_SELL || (stock.forecast < 0.55 && stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL)) {
         // create list of short shares to continue to have
         const salePrice = ns.stock.sellShort(stock.sym, stock.shortShares);
         const saleTotal = salePrice * stock.shortShares;
         const saleCost = stock.shortPrice * stock.shortShares;
-        const saleProfit = saleTotal - saleCost - 2 * commission;
+        const saleProfit = saleCost - saleTotal - 2 * commission;
         stock.shares = 0;
         longStocks.add(stock.sym);
         ns.print(`WARN ${ stock.summary } SHORT SOLD for ${ ns.nFormat(saleProfit, "$0.0a") } profit`);
@@ -71,7 +72,7 @@ function tendStocks(ns) {
   }
 
   for (const stock of stocks) {
-    var money = ns.getServerMoneyAvailable("home");
+    var money = ns.getServerMoneyAvailable("home") - MONEY_THRESH;
     //ns.print(`INFO ${stock.summary}`);
     if (stock.forecast > FORECAST_THRESH_BUY) {
       longStocks.add(stock.sym);
@@ -79,7 +80,7 @@ function tendStocks(ns) {
       if (money > 500 * commission) {
         const sharesToBuy = Math.min(stock.maxShares, Math.floor((money - commission) / stock.askPrice));
         if (ns.stock.buy(stock.sym, sharesToBuy) > 0) {
-          ns.print(`WARN ${ stock.summary } LONG BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ns.nFormat(money, "$0.0a")}`);
+          ns.print(`WARN ${ stock.summary } LONG BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ ns.nFormat(sharesToBuy * stock.bidPrice, "$0.0a") }`);
         }
       }
     }
@@ -89,7 +90,7 @@ function tendStocks(ns) {
       if (money > 500 * commission) {
         const sharesToBuy = Math.min(stock.maxShares, Math.floor((money - commission) / stock.bidPrice));
         if (ns.stock.short(stock.sym, sharesToBuy) > 0) {
-          ns.print(`WARN ${ stock.summary } SHORT BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ns.nFormat(money, "$0.0a")}`);
+          ns.print(`WARN ${ stock.summary } SHORT BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ ns.nFormat(sharesToBuy * stock.bidPrice, "$0.0a") }`);
         }
       }
     }
@@ -99,14 +100,16 @@ function tendStocks(ns) {
   // send stock market manipulation orders to hack manager
   var growStockPort = ns.getPortHandle(1); // port 1 is grow
   var hackStockPort = ns.getPortHandle(2); // port 2 is hack
-  if (growStockPort.empty() && hackStockPort.empty()) {
+  if (growStockPort.empty()) {
     // only write to ports if empty
     for (const sym of longStocks) {
-      ns.print("INFO grow " + sym);
+      // ns.print("INFO grow " + sym);
       growStockPort.write(getSymServer(sym));
     }
+  }
+  if (hackStockPort.empty()) {
     for (const sym of shortStocks) {
-      ns.print("INFO hack " + sym);
+      // ns.print("INFO hack " + sym);
       hackStockPort.write(getSymServer(sym));
     }
   }
