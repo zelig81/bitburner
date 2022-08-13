@@ -4,12 +4,13 @@
 // requires 4s Market Data TIX API Access
 
 // defines if stocks can be shorted (see BitNode 8)
-const shortAvailable = true;
+const shortAvailable = false;
 
 const commission = 100000;
 const FORECAST_THRESH_BUY = 0.57;
 const FORECAST_THRESH_SELL = 0.47;
 const PROFIT_THRESH_SELL = - 0.015;
+const PROFIT_THRESH_SELL_MAX = - 0.03;
 const MONEY_THRESH = 10 * 1000000
 
 export async function main(ns) {
@@ -34,7 +35,7 @@ function tendStocks(ns) {
 
   for (const stock of stocks) {
     if (stock.longShares > 0) {
-      if (stock.forecast < FORECAST_THRESH_SELL || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)) {
+      if (stock.forecast < FORECAST_THRESH_SELL || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL) || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX) {
         // create list of long shares to continue to have
         const salePrice = ns.stock.sell(stock.sym, stock.longShares);
         const saleTotal = salePrice * stock.longShares;
@@ -52,7 +53,7 @@ function tendStocks(ns) {
       }
     }
     if (stock.shortShares > 0) {
-      if (stock.forecast > 1 - FORECAST_THRESH_SELL || (stock.forecast < 0.55 && stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL)) {
+      if (stock.forecast > 1 - FORECAST_THRESH_SELL || (stock.forecast < 0.55 && stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL) || stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL_MAX) {
         // create list of short shares to continue to have
         const salePrice = ns.stock.sellShort(stock.sym, stock.shortShares);
         const saleTotal = salePrice * stock.shortShares;

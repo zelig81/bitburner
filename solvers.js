@@ -105,12 +105,12 @@ export const compressionIILZ = (data) => {
       chunks.push(notParsed.substring(0, 1))
       notParsed = notParsed.substring(1)
     } else {
-      console.log(`${ data }:\n\tchunks: ${ chunks }`)
-      return notParsed
+      console.log(`ERROR: ${ data }:\n\tchunks: ${ chunks }\n\tnotParsed: ${ notParsed }\n\toutput: ${ output }`)
+      return ""
     }
     i++
   }
-  console.log(`${ data }:\n\tchunks: ${ chunks }`)
+  console.log(`Success: ${ data }:\n\tchunks: ${ chunks }`)
   return output
 }
 

@@ -146,5 +146,5 @@ function solve(type, data, server, contract, ns, returnReward) {
     default:
       return false;
   }
-  return (solution !== "") ? ns.codingcontract.attempt(solution, contract, server, opts=[returnReward]) : "";
+  return (solution !== "") ? ns.codingcontract.attempt(solution, contract, server, [returnReward]) : "";
 }
