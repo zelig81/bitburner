@@ -35,7 +35,12 @@ function tendStocks(ns) {
 
   for (const stock of stocks) {
     if (stock.longShares > 0) {
-      if (stock.forecast < FORECAST_THRESH_SELL || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL) || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX) {
+      if (
+        (
+          stock.forecast < FORECAST_THRESH_SELL
+          || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)
+          || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX
+        ) && stock.longPrice > 2000) {
         // create list of long shares to continue to have
         const salePrice = ns.stock.sell(stock.sym, stock.longShares);
         const saleTotal = salePrice * stock.longShares;
@@ -53,7 +58,11 @@ function tendStocks(ns) {
       }
     }
     if (stock.shortShares > 0) {
-      if (stock.forecast > 1 - FORECAST_THRESH_SELL || (stock.forecast < 0.55 && stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL) || stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL_MAX) {
+      if (
+          stock.forecast > 1 - FORECAST_THRESH_SELL
+          || (stock.forecast < 0.55 && stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL)
+          || stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL_MAX
+        ) {
         // create list of short shares to continue to have
         const salePrice = ns.stock.sellShort(stock.sym, stock.shortShares);
         const saleTotal = salePrice * stock.shortShares;
