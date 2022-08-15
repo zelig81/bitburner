@@ -1,4 +1,5 @@
 import {
+  arrayJumpingGameII,
   compressionIILZ,
   compressionIRLE,
   factor,
@@ -105,7 +106,7 @@ function solve(type, data, server, contract, ns, returnReward) {
       solution = solverArrayJumpingGame(data);
       break;
     case "Array Jumping Game II":
-      solution = "";
+      solution = arrayJumpingGameII(data);
       break;
     case "Find All Valid Math Expressions":
       solution = solverWaysToExpress(data);

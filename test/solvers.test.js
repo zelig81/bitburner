@@ -1,9 +1,22 @@
 var assert = require('assert');
 import {
+  arrayJumpingGameII,
   compressionIRLE,
   hammingCodesIntegerToBinary,
   compressionIILZ,
 } from '../solvers.js'
+
+describe('arrayJumpingGameII', () => {
+  test('2,5,3,4,0,3,4,3,4,5,0,3,5,3,1,1,2,0,0,5,3,1,4,4,2 -> 0', () => {
+    expect(arrayJumpingGameII([2, 5, 3, 4, 0, 3, 4, 3, 4, 5, 0, 3, 5, 3, 1, 1, 2, 0, 0, 5, 3, 1, 4, 4, 2])).toEqual(0)
+  } )
+  test('2,3,4,2,1,4,4,1,2,6,3,4,3,1,4,1,6 -> 5', () => {
+    expect(arrayJumpingGameII([2, 3, 4, 2, 1, 4, 4, 1, 2, 6, 3, 4, 3, 1, 4, 1, 6])).toEqual(5)
+  } )
+  test('2,4,4,3,1,4,2,0,2,6,3,2,0,2,0,2,5,3,3,3,4,3,1,0 -> 7', () => {
+    expect(arrayJumpingGameII([2, 4, 4, 3, 1, 4, 2, 0, 2, 6, 3, 2, 0, 2, 0, 2, 5, 3, 3, 3, 4, 3, 1, 0])).toEqual(7)
+  } )
+})
 
 describe('compressionIILZ', function () {
   test('5aaabb450723abb -> aaabbaaababababaabb', function () {
@@ -37,4 +50,6 @@ describe('compressionIILZ', function () {
   // test('7v67M066560586hs7b67342yS87645uyO6127njn5jzm692gW1876d0fXmL5713 -> stam', function () {
   //   expect(compressionIILZ('7v67M066560586hs7b67342yS87645uyO6127njn5jzm692gW1876d0fXmL5713')).toEqual('stam');
   // });
+
+  // 7v67M066560586hs7b67342yS87645uyO6127njn5jzm692gW1876d0fXmL5713 - does not work
 });

@@ -126,6 +126,7 @@ export const compressionIIILZ = (data) => {
 
   You are given the following input string:
       eDKeD4vD4vD4vD4bdBCchzBCchzBCczBCczgBCczgBCJe4e4e4e4e4e44444ze4444ze4
+      whhhhhhhhhh2ghhhhh2ux8ux8uxe6p6ZeMBp6ZeMBp626ZBpBd1OBd1O2gupq
   Encode it using Lempel-Ziv encoding with the minimum possible output length.
 
   Examples (some have other possible encodings of minimal length):
@@ -140,7 +141,7 @@ export const compressionIIILZ = (data) => {
   */
 }
 
-export const arrayJumpII = (data) => {
+export const arrayJumpingGameII = (arrayData) => {
   /*
   Array Jumping Game II
   You are given the following array of integers:
@@ -153,6 +154,33 @@ export const arrayJumpII = (data) => {
 
   If it's impossible to reach the end, then the answer should be 0.
   */
+  let jumps = []
+  jumps = recursiveArrayJumpingGameII(jumps, "", arrayData)
+  // console.log(`made jumps: ${ jumps }`)
+  let output = jumps.reduce((accumulator, current) => {
+    if (accumulator <= current.length && accumulator > 0) {
+      return accumulator
+    } else {
+      return current.length
+    }
+  }, 0)
+  return output
+}
+
+function recursiveArrayJumpingGameII(jumps, currentJump, arrayData) {
+  let startIndex = currentJump.split('').reduce((sum, current) => sum + parseInt(current), 0)
+  let maxNextJump = parseInt(arrayData[startIndex])
+  if (startIndex + maxNextJump >= arrayData.length - 1) { // base case
+    let nextJump = arrayData.length - 1 - startIndex
+    jumps.push(currentJump + nextJump.toString())
+    return jumps
+  } else if (maxNextJump === 0) {
+    return jumps
+  } else {
+    for (let i = maxNextJump; i >= 1; i--)
+      jumps = recursiveArrayJumpingGameII(jumps, "" + currentJump + i, arrayData)
+    return jumps
+  }
 }
 
 // Sanitize Parentheses in Expression
