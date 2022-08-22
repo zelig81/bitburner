@@ -40,9 +40,10 @@ function tendStocks(ns) {
           stock.forecast < FORECAST_THRESH_SELL
           || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)
           || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX
-        ) && stock.longPrice > 2000) {
+        ) && stock.cost > 5 * 10 ** 6
+      ) {
         // create list of long shares to continue to have
-        const salePrice = ns.stock.sell(stock.sym, stock.longShares);
+        const salePrice = ns.stock.sellStock(stock.sym, stock.longShares);
         const saleTotal = salePrice * stock.longShares;
         const saleCost = stock.longPrice * stock.longShares;
         const saleProfit = saleTotal - saleCost - 2 * commission;
@@ -59,10 +60,10 @@ function tendStocks(ns) {
     }
     if (stock.shortShares > 0) {
       if (
-          stock.forecast > 1 - FORECAST_THRESH_SELL
-          || (stock.forecast < 0.55 && stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL)
-          || stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL_MAX
-        ) {
+        stock.forecast > 1 - FORECAST_THRESH_SELL
+        || (stock.forecast < 0.55 && stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL)
+        || stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL_MAX
+      ) {
         // create list of short shares to continue to have
         const salePrice = ns.stock.sellShort(stock.sym, stock.shortShares);
         const saleTotal = salePrice * stock.shortShares;
@@ -89,7 +90,7 @@ function tendStocks(ns) {
       //ns.print(`INFO ${stock.summary}`);
       if (money > 500 * commission) {
         const sharesToBuy = Math.min(stock.maxShares, Math.floor((money - commission) / stock.askPrice));
-        if (ns.stock.buy(stock.sym, sharesToBuy) > 0) {
+        if (ns.stock.buyStock(stock.sym, sharesToBuy) > 0) {
           ns.print(`WARN ${ stock.summary } LONG BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ ns.nFormat(sharesToBuy * stock.bidPrice, "$0.0a") }`);
         }
       }

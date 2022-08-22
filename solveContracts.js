@@ -16,7 +16,7 @@ import {
   spiral,
   uniquePathsI,
   uniquePathsII,
-} from './solvers.js'
+} from './_solvers.js'
 
 export async function main(ns) {
   ns.disableLog("ALL");
@@ -139,7 +139,7 @@ function solve(type, data, server, contract, ns, returnReward) {
       solution = "";
       break;
     case "Shortest Path in a Grid":
-      solution = "";
+      solution = ""; //shortestPathInAGrid(data)
       break;
     case "Proper 2-Coloring of a Graph":
       solution = "";

@@ -231,9 +231,18 @@ function buyAugments(ns, player) {
     var newAugmentations = augmentations.filter(val => !purchasedAugmentations.includes(val));
     for (const augmentation of newAugmentations) {
       if (ns.getAugmentationRepReq(augmentation) <= ns.getFactionRep(faction)) {
-        sortedAugmentations.push([augmentation, ns.getAugmentationPrice(augmentation)]);
+        let price = ns.getAugmentationPrice(augmentation);
+        sortedAugmentations.push([augmentation, price, faction]);
       }
     }
+  }
+
+  let augmentationsOfFactions = {}
+  for (let augmentation of sortedAugmentations) {
+    if (!(augmentation[0] in augmentationsOfFactions)) {
+      augmentationsOfFactions[augmentation[0]] = []
+    }
+    augmentationsOfFactions[augmentation[0]].push(augmentation[2])
   }
 
   // costs are the second element in the 2d arrays
@@ -272,6 +281,7 @@ function buyAugments(ns, player) {
       augmentationCostMultiplier *= 1.9;
     }
   }
+  printableSortedAugmentations = sortedAugmentations.map()
 
   ns.print("Augmentation purchase order: " + sortedAugmentations)
   ns.print("Current augmentation purchase cost: " + ns.nFormat(overallAugmentationCost, "0.0a"));
@@ -371,8 +381,8 @@ function commitCrime(ns, player, combatStatsGoal = 300) {
   return bestCrimeStats.time + 10;
 }
 
-var megaCorps = ["Clarke Incorporated", "Bachman & Associates", "OmniTek Incorporated", "NWO", "Fulcrum Secret Technologies", "Blade Industries",
-  "ECorp", "MegaCorp", "KuaiGong International", "Four Sigma"];
+var megaCorps = ["Four Sigma", "ECorp", "Clarke Incorporated", "Bachman & Associates", "OmniTek Incorporated", "NWO", "Fulcrum Secret Technologies", "Blade Industries",
+  "MegaCorp", "KuaiGong International"];
 
 var cityFactions = ["Sector-12", "Chongqing", "New Tokyo", "Ishima", "Aevum", "Volhaven"];
 

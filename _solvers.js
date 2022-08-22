@@ -640,6 +640,8 @@ export const proper2ColoringOfGraph = (data) => {
   Proper 2-Coloring of a Graph
   You are given the following data, representing a graph:
   [9,[[4,7],[5,8],[2,6],[0,4],[4,5],[0,6],[3,7],[7,8],[6,7],[2,4],[5,6]]]
+  [6, [[3, 5], [0, 4], [2, 4]]]
+  [10,[[0,3],[4,6],[2,8],[1,2],[0,9],[5,7],[4,5],[5,8],[0,7],[0,1],[2,4],[6,9],[1,6],[1,5],[2,9]]]
   Note that "graph", as used here, refers to the field of graph theory, and has no relation to statistics or plotting. The first element of the data represents the number of vertices in the graph. Each vertex is a unique number between 0 and 8. The next element of the data represents the edges of the graph. Two vertices u,v in a graph are said to be adjacent if there exists an edge [u,v]. Note that an edge [u,v] is the same as an edge [v,u], as order does not matter. You must construct a 2-coloring of the graph, meaning that you have to assign each vertex in the graph a "color", either 0 or 1, such that no two adjacent vertices have the same color. Submit your answer in the form of an array, where element i represents the color of vertex i. If it is impossible to construct a 2-coloring of the given graph, instead submit an empty array.
 
   Examples:
@@ -651,7 +653,7 @@ export const proper2ColoringOfGraph = (data) => {
   Output: []*/
 }
 
-export const shortestPathInGrid = (data) => {
+export const shortestPathInAGrid = (data) => {
 
   /*
   Shortest Path in a Grid
@@ -659,6 +661,16 @@ export const shortestPathInGrid = (data) => {
 
 
   You are located in the top-left corner of the following grid:
+
+    [[0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [0, 1, 0, 0, 0, 0, 1, 1, 1, 1],
+    [0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 1, 0, 0, 1, 1, 1, 0],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0]]
 
     [[0,0,0,0,0,0,0,0,0],
      [0,0,0,0,0,0,1,0,0],

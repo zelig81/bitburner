@@ -1,10 +1,9 @@
-var assert = require('assert');
 import {
   arrayJumpingGameII,
   compressionIRLE,
   hammingCodesIntegerToBinary,
   compressionIILZ,
-} from '../solvers.js'
+} from '../_solvers.js'
 
 describe('arrayJumpingGameII', () => {
   test('2,5,3,4,0,3,4,3,4,5,0,3,5,3,1,1,2,0,0,5,3,1,4,4,2 -> 0', () => {

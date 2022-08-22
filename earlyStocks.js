@@ -131,7 +131,7 @@ export async function main(ns) {
         const cost = longShares * longPrice;
         const profit = longShares * (bidPrice - longPrice) - 2 * commission;
         if (state < 0) {
-          const sellPrice = ns.stock.sell(sym, longShares);
+          const sellPrice = ns.stock.sellStock(sym, longShares);
           if (sellPrice > 0) {
             sold = true;
             ns.print(`INFO SOLD (long) ${ sym }. Profit: ${ format(profit) }`);
@@ -165,7 +165,7 @@ export async function main(ns) {
       if (money > commission * 1000) {
         if (state > 0 && !sold) {
           const sharesToBuy = Math.min(ns.stock.getMaxShares(sym), Math.floor((money - commission) / askPrice));
-          if (ns.stock.buy(sym, sharesToBuy) > 0) {
+          if (ns.stock.buyStock(sym, sharesToBuy) > 0) {
             longStocks.add(sym);
             ns.print(`INFO BOUGHT (long) ${ sym }.`);
           }
