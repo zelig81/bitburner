@@ -23,6 +23,8 @@ const crimes = ["Shoplift", "RobStore", "Mug", "Larceny", "Deal Drugs", "Bond Fo
 const ignoreFactionAugs = new Map([
   ["CyberSec", 'Cranial Signal Processors - Gen II'],
   ["NiteSec", 'DataJack'],
+  ["New Tokyo", 'DataJack'],
+  ["Chongqing", 'DataJack'],
   ["The Black Hand", 'Embedded Netburner Module Core Implant'],
   ["Sector-12", 'Neuralstimulator'],
 ])
@@ -313,9 +315,9 @@ function buyAugments(ns, player) {
       augmentationCostMultiplier *= 1.9;
     }
   }
-  // printableSortedAugmentations = sortedAugmentations.map()
+  let printableSortedAugmentations = sortedAugmentations.map(([augmentation, price, faction]) => [augmentation, faction, ns.nFormat(price, "$0.0a")])
 
-  ns.print("Augmentation purchase order: " + sortedAugmentations)
+  ns.print("Augmentation purchase order: " + JSON.stringify(printableSortedAugmentations))
   ns.print("Current augmentation purchase cost: " + ns.nFormat(overallAugmentationCost, "0.0a"));
 
   if (player.money > overallAugmentationCost) {
