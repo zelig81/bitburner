@@ -2,15 +2,42 @@
 const studyUntilHackLevel = 50;
 const moneyThreshold = 2;
 
+const megaCorps = [
+  "Blade Industries", // hack+combat
+  "ECorp", // mostly hacking
+  "NWO", // combat + hack + all skills unique + strength unique
+  "Fulcrum Secret Technologies", // hack + combat
+  "OmniTek Incorporated", // combat + reputation + charisma + hack unique
+  "Clarke Incorporated", // reputation + charisma + all skills unique + hack unique
+  "MegaCorp", // combat unique
+  "Four Sigma", // reputation
+  "KuaiGong International", // combat + str/agi/def unique
+  "Bachman & Associates", // reputation + charisma
+];
+
+const cityFactions = ["Sector-12", "Chongqing", "New Tokyo", "Ishima", "Aevum", "Volhaven"];
+
+const crimes = ["Shoplift", "RobStore", "Mug", "Larceny", "Deal Drugs", "Bond Forgery", "Traffick Arms", "Homicide",
+  "Grand Theft Auto", "Kidnap", "Assassination", "Heist"];
+
+const ignoreFactionAugs = new Map([
+  ["CyberSec", 'Cranial Signal Processors - Gen II'],
+  ["NiteSec", 'DataJack'],
+  ["The Black Hand", 'Embedded Netburner Module Core Implant'],
+  ["Sector-12", 'Neuralstimulator'],
+])
+
 /** @param {NS} ns **/
 export async function main(ns) {
   ns.disableLog("ALL");
+  ns.tail();
 
   while (true) {
     ns.print("");
 
     var sleepTime = 5000;
     var player = ns.getPlayer();
+    let currentWork = ns.singularity.getCurrentWork()
 
     getPrograms(ns, player);
 
@@ -22,20 +49,25 @@ export async function main(ns) {
 
     var factionsForReputation = getFactionsForReputation(ns, player);
     ns.print("Factions for Reputation: " + [...factionsForReputation.keys()]);
+    ns.print("Corps to work for reputation: " + getCorpsForReputation(factionsForReputation))
 
-    var actionUseful = currentActionUseful(ns, player, factionsForReputation);
+    var actionUseful = currentActionUseful(ns, player, currentWork, factionsForReputation);
     ns.print("Current action useful: " + actionUseful);
 
     if (!actionUseful) {
       sleepTime = chooseAction(ns, sleepTime, player, factionsForReputation);
     }
 
-    ns.print("WorkFactionName: " + currentWork.factionName) //player.currentWorkFactionName)
-    ns.print("WorkFactionDescription: " + currentWork.factionDescription) //player.currentWorkFactionDescription)
-    ns.print("workType: " + currentWork.workType) //player.workType)
-    ns.print("companyName: " + player.companyName)
-    ns.print("jobs: " + JSON.stringify(player.jobs))
-    ns.print("Corps to work for: " + getCorpsForReputation(factionsForReputation))
+    if (currentWork) {
+      if (currentWork.type === "CRIME") {
+        ns.print(`Work on crime of type: ${currentWork.crimeType}`)
+      } else if (currentWork.type === "COMPANY") {
+        ns.print(`Work for company: ${currentWork.companyName}`)
+      } else if (currentWork.type === "FACTION") {
+        ns.print(`Work for faction: ${currentWork.factionName} by making ${currentWork.factionWorkType}`)
+      }
+    }
+    ns.print("Employed on jobs: " + JSON.stringify(player.jobs))
 
     ns.print("Karma: " + ns.heart.break());
     ns.print("Kills: " + player.numPeopleKilled);
@@ -137,16 +169,16 @@ function applyForPromotion(ns, player, corp) {
   ns.singularity.workForCompany(corp, ns.singularity.isFocused());
 }
 
-function currentActionUseful(ns, player, factions) {
+function currentActionUseful(ns, player, currentWork, factions) {
   var playerControlPort = ns.getPortHandle(3); // port 2 is hack
-  if (player.workType == "Working for Faction") {
-    if (factions.has(player.currentWorkFactionName)) {
-      var repRemaining = factions.get(player.currentWorkFactionName) - player.workRepGained;
+  if (currentWork.type === "FACTION") {
+    if (factions.has(currentWork.factionName)) {
+      var repRemaining = factions.get(currentWork.factionName) // todo remove old: - player.workRepGained;
       if (repRemaining > 0) {
         // working for a faction needing more reputation for augmentations
-        if (playerControlPort.empty() && player.currentWorkFactionDescription == "carrying out hacking contracts") {
+        if (playerControlPort.empty() && currentWork.factionWorkType === "HACKING") {
           // only write to ports if empty
-          ns.print("ns.share() to increase faction reputation");
+          ns.print(`run ns.share() to increase faction [${ currentWork.factionName}] reputation`);
           playerControlPort.write(true);
 
         }
@@ -155,13 +187,12 @@ function currentActionUseful(ns, player, factions) {
           playerControlPort.write(false);
         }
         // seems a cycle is .2 ms, so RepGainRate * 5 is gain per second
-        var reputationTimeRemaining = repRemaining / (player.workRepGainRate * 5);
-        ns.print("Reputation remaining: " + ns.nFormat(repRemaining, "0a") + " in " + ns.nFormat(reputationTimeRemaining / 60, "0a") + " min");
+        // todo remove old: var reputationTimeRemaining = repRemaining / (player.workRepGainRate * 5);
+        ns.print("Reputation remaining: " + ns.nFormat(repRemaining, "0a")) // todo remove old: + " in " + ns.nFormat(reputationTimeRemaining / 60, "0a") + " min");
         return true;
-      }
-      else {
-        ns.print("Max Reputation @ " + player.currentWorkFactionName);
-        ns.toast("Max Reputation @ " + player.currentWorkFactionName, "success", 5000);
+      } else {
+        ns.print("Max Reputation @ " + currentWork.factionName);
+        ns.toast("Max Reputation @ " + currentWork.factionName, "success", 5000);
         return false;
       }
     }
@@ -180,18 +211,13 @@ function currentActionUseful(ns, player, factions) {
       playerControlPort.write(false);
     }
   }
-  if (player.workType == "Working for Company" && player.companyName != "") {
-    // for unknown reasons it might happen to have the work type "working for company" without actually working for one
-    // just to make sure, also check that we have a company.
-
-    var reputationGoal = 300000;
-
-    var reputation = ns.singularity.getCompanyRep(player.companyName) + (player.workRepGained * 3 / 4);
+  if (currentWork.type == "COMPANY") {
+    var reputation = ns.singularity.getCompanyRep(currentWork.companyName) // todo remove old: + (player.workRepGained * 3 / 4);
     ns.print("Company reputation: " + ns.nFormat(reputation, "0a"));
-    if (factions.has(player.companyName)) {
+    if (factions.has(currentWork.companyName)) {
       return false;
     }
-    applyForPromotion(ns, player, player.companyName);
+    applyForPromotion(ns, player, currentWork.companyName);
     return true;
   }
   if (player.workType == "Studying or Taking a class at university") {
@@ -217,16 +243,18 @@ function getFactionsForReputation(ns, player) {
 
 function getCorpsForReputation(ns, factions) {
   var corpsWithoutFaction = []
-  for (const corp of megaCorps) {
-    if (!factions.has(corp) && maxAugmentRep(ns, corp) > 0) {
-      corpsWithoutFaction.push(corp);
+  if (factions) {
+    for (const corp of megaCorps) {
+      if (!factions.has(corp) && maxAugmentRep(ns, corp) > 0) {
+        corpsWithoutFaction.push(corp);
+      }
     }
   }
   return corpsWithoutFaction;
 }
 
 function buyAugments(ns, player) {
-
+  // todo: refactor for better understanding
   var sortedAugmentations = [];
 
   for (const faction of player.factions) {
@@ -381,31 +409,6 @@ function commitCrime(ns, player, combatStatsGoal = 300) {
   ns.print("Crime value " + ns.nFormat(bestCrimeValue, "0a") + " for " + bestCrime);
   return bestCrimeStats.time + 10;
 }
-
-var megaCorps = [
-  "ECorp",
-  "Four Sigma",
-  "Clarke Incorporated",
-  "Bachman & Associates",
-  "OmniTek Incorporated",
-  "NWO",
-  "Fulcrum Secret Technologies",
-  "Blade Industries",
-  "MegaCorp",
-  "KuaiGong International"
-];
-
-var cityFactions = ["Sector-12", "Chongqing", "New Tokyo", "Ishima", "Aevum", "Volhaven"];
-
-var crimes = ["Shoplift", "RobStore", "Mug", "Larceny", "Deal Drugs", "Bond Forgery", "Traffick Arms", "Homicide",
-  "Grand Theft Auto", "Kidnap", "Assassination", "Heist"];
-
-const ignoreFactionAugs = new Map([
-  ["CyberSec", 'Cranial Signal Processors - Gen II'],
-  ["NiteSec", 'DataJack'],
-  ["The Black Hand", 'Embedded Netburner Module Core Implant'],
-  ["Sector-12", 'Neuralstimulator'],
-])
 
 /*
 TODO: Implement creating programs manual in the first run
