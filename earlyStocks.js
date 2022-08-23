@@ -171,7 +171,7 @@ export async function main(ns) {
           }
         } else if (state < 0 && !sold && shortAvailable) {
           const sharesToBuy = Math.min(ns.stock.getMaxShares(sym), Math.floor((money - commission) / bidPrice));
-          if (ns.stock.short(sym, sharesToBuy) > 0) {
+          if (ns.stock.buyShort(sym, sharesToBuy) > 0) {
             shortStocks.add(sym);
             ns.print(`INFO BOUGHT (short) ${ sym }.`);
           }

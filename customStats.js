@@ -11,7 +11,7 @@ export async function main(ns) {
       headers.push("Karma");
       values.push(ns.heart.break());
       headers.push("ScrExp");
-      values.push(ns.getScriptExpGain().toPrecision(5) + '/sec');
+      values.push(ns.getTotalScriptExpGain().toPrecision(5) + '/sec');
       headers.push("ScrInc");
       values.push(ns.getScriptIncome()[0].toPrecision(5) + '/sec');
 

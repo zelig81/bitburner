@@ -40,7 +40,7 @@ function tendStocks(ns) {
           stock.forecast < FORECAST_THRESH_SELL
           || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)
           || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX
-        ) && stock.cost > 5 * 10 ** 6
+        ) && stock.bidPrice > 1000
       ) {
         // create list of long shares to continue to have
         const salePrice = ns.stock.sellStock(stock.sym, stock.longShares);
@@ -57,8 +57,7 @@ function tendStocks(ns) {
         ns.print(`INFO ${ stock.summary } LONG ${ ns.nFormat(stock.cost + stock.profit, "$0.0a") }`);
         overallValue += (stock.cost + stock.profit);
       }
-    }
-    if (stock.shortShares > 0) {
+    } else if (stock.shortShares > 0) { // cannot have short and long both on the same stock (there is no added value)
       if (
         stock.forecast > 1 - FORECAST_THRESH_SELL
         || (stock.forecast < 0.55 && stock.profit / stock.cost > 1 - PROFIT_THRESH_SELL)
@@ -79,13 +78,15 @@ function tendStocks(ns) {
         ns.print(`INFO ${ stock.summary } SHORT ${ ns.nFormat(stock.cost + stock.profit, "$0.0a") }`);
         overallValue += (stock.cost + stock.profit);
       }
+    } else if (stock.askPrice > 10 ** 6 && stock.longShares === 0) { // if the askPrice is huge, there is a good place to make short profit from hack (if we do not have any shares long or short)
+      shortStocks.add(stock.sym);
     }
   }
 
   for (const stock of stocks) {
     var money = ns.getServerMoneyAvailable("home") - MONEY_THRESH;
     //ns.print(`INFO ${stock.summary}`);
-    if (stock.forecast > FORECAST_THRESH_BUY) {
+    if (stock.forecast > FORECAST_THRESH_BUY || stock.askPrice < 1) {
       longStocks.add(stock.sym);
       //ns.print(`INFO ${stock.summary}`);
       if (money > 500 * commission) {
@@ -100,7 +101,7 @@ function tendStocks(ns) {
       //ns.print(`INFO ${stock.summary}`);
       if (money > 500 * commission) {
         const sharesToBuy = Math.min(stock.maxShares, Math.floor((money - commission) / stock.bidPrice));
-        if (ns.stock.short(stock.sym, sharesToBuy) > 0) {
+        if (ns.stock.buyShort(stock.sym, sharesToBuy) > 0) {
           ns.print(`WARN ${ stock.summary } SHORT BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ ns.nFormat(sharesToBuy * stock.bidPrice, "$0.0a") }`);
         }
       }

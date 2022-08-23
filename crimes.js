@@ -21,7 +21,7 @@ export async function main(ns) {
 
   while (true) {
     await ns.sleep(timeout); // Wait it out first
-    if (ns.isBusy()) continue;
+    if (ns.singularity.isBusy()) continue;
     // /** Calculate the risk value of all crimes */
     // let choices = crimes.map((crime) => {
     //   let crimeStats = ns.getCrimeStats(crime); // Let us look at the important bits
@@ -43,7 +43,7 @@ export async function main(ns) {
 
 
     let currentCrime = i % 20 === 0 ? "heist" : "homicide" //bestCrime[0]
-    ns.commitCrime(currentCrime);
+    ns.singularity.commitCrime(currentCrime);
     ns.print(
       `Crime: ${ currentCrime } Risk Value: ${ ns.getCrimeChance(currentCrime).toPrecision(3) } Cash to Earn: ${ ns.nFormat(ns
         .getCrimeStats(currentCrime)
