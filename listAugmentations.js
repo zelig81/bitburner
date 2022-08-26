@@ -3,12 +3,12 @@ export async function main(ns) {
   ns.disableLog('ALL');
   let player = ns.getPlayer()
   // ns.tprint(`players factions: ${ player.factions }`)
-  let purchasedAugmentations = ns.getOwnedAugmentations(true)
+  let purchasedAugmentations = ns.singularity.getOwnedAugmentations(true)
   let factionsToAugmentations = {}
   for (let faction of player.factions) {
     factionsToAugmentations[faction] = {}
-    factionsToAugmentations[faction]['reputation'] = ns.getFactionRep(faction)
-    factionsToAugmentations[faction]['augmentations'] = ns.getAugmentationsFromFaction(faction)
+    factionsToAugmentations[faction]['reputation'] = ns.singularity.getFactionRep(faction)
+    factionsToAugmentations[faction]['augmentations'] = ns.singularity.getAugmentationsFromFaction(faction)
   }
   // ns.tprint(`factions to augmentations: ${ JSON.stringify(factionsToAugmentations) }`)
 
@@ -17,8 +17,8 @@ export async function main(ns) {
       if (!(augmentation in accumulator) && !(augmentation in purchasedAugmentations)) {
         accumulator[augmentation] = { "factions": [], "price": 0, "reputation": 2000000 }
       }
-      accumulator[augmentation]["price"] = ns.getAugmentationPrice(augmentation)
-      accumulator[augmentation]["reputation"] = ns.getAugmentationRepReq(augmentation)
+      accumulator[augmentation]["price"] = ns.singularity.getAugmentationPrice(augmentation)
+      accumulator[augmentation]["reputation"] = ns.singularity.getAugmentationRepReq(augmentation)
       if (accumulator[augmentation]["reputation"] <= factionObject[1]['reputation'] )
         accumulator[augmentation]["factions"].push(factionObject[0])
     }

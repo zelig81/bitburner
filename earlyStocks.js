@@ -57,12 +57,12 @@ export async function main(ns) {
   ns.disableLog("ALL");
   ns.tail()
 
-  if (!ns.purchaseWseAccount() || !ns.purchaseTixApi()) {
+  if (!ns.stock.purchaseWseAccount() || !ns.stock.purchaseTixApi()) {
     while (ns.getServerMoneyAvailable('home') < 5200 * 1000 * 1000 * moneyRatioAPIPurchase) {
       await ns.sleep(60000)
     }
-    ns.purchaseWseAccount()
-    ns.purchaseTixApi()
+    ns.stock.purchaseWseAccount()
+    ns.stock.purchaseTixApi()
   }
 
   let symLastPrice = {};
@@ -76,8 +76,8 @@ export async function main(ns) {
     await ns.sleep(2000);
 
     if (ns.getServerMoneyAvailable('home') > 26 * 1000 * 1000 * 1000 * moneyRatioAPIPurchase) {
-      ns.purchase4SMarketData()
-      ns.purchase4SMarketDataTixApi()
+      ns.stock.purchase4SMarketData()
+      ns.stock.purchase4SMarketDataTixApi()
       if (shortAvailable) {
         ns.exec("stockShorts.js", "home")
       } else {

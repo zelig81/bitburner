@@ -4,7 +4,7 @@
 // requires 4s Market Data TIX API Access
 
 // defines if stocks can be shorted (see BitNode 8)
-const shortAvailable = false;
+const shortAvailable = true;
 
 const commission = 100000;
 const FORECAST_THRESH_BUY = 0.57;
@@ -40,7 +40,7 @@ function tendStocks(ns) {
           stock.forecast < FORECAST_THRESH_SELL
           || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)
           || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX
-        ) && stock.bidPrice > 1000
+        ) && stock.bidPrice > 100
       ) {
         // create list of long shares to continue to have
         const salePrice = ns.stock.sellStock(stock.sym, stock.longShares);
@@ -86,7 +86,7 @@ function tendStocks(ns) {
   for (const stock of stocks) {
     var money = ns.getServerMoneyAvailable("home") - MONEY_THRESH;
     //ns.print(`INFO ${stock.summary}`);
-    if (stock.forecast > FORECAST_THRESH_BUY || stock.askPrice < 1) {
+    if ((stock.forecast > FORECAST_THRESH_BUY || stock.askPrice < 1) && stock.shortShares === 0 && stock.longShares < stock.maxShares) {
       longStocks.add(stock.sym);
       //ns.print(`INFO ${stock.summary}`);
       if (money > 500 * commission) {
@@ -95,8 +95,7 @@ function tendStocks(ns) {
           ns.print(`WARN ${ stock.summary } LONG BOUGHT ${ ns.nFormat(sharesToBuy, "0.0a") } shares for ${ ns.nFormat(sharesToBuy * stock.bidPrice, "$0.0a") }`);
         }
       }
-    }
-    else if (stock.forecast < 1 - FORECAST_THRESH_BUY && shortAvailable) {
+    } else if (stock.forecast < 1 - FORECAST_THRESH_BUY && stock.longShares === 0 && stock.shortShares < stock.maxShares && shortAvailable) {
       shortStocks.add(stock.sym);
       //ns.print(`INFO ${stock.summary}`);
       if (money > 500 * commission) {

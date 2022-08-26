@@ -69,7 +69,33 @@ export async function main(ns) {
 
   // automatically backdoor these servers. Requires singularity functions.
   let backdoorServersIgnore = new Set(["w0r1d_d43m0n"])
-  var backdoorServers = getAvailableForBackdoorServers(ns) // todo remove old: new Set(["CSEC", "I.I.I.I", "avmnite-02h", "run4theh111z", "clarkinc", "nwo", "omnitek", "fulcrumtech", "fulcrumassets", "w0r1d_d43m0n"]);
+  var backdoorServers = new Set([
+    "CSEC",
+    "I.I.I.I",
+    "avmnite-02h",
+    "run4theh111z",
+    "clarkinc",
+    "nwo",
+    "omnitek",
+    "fulcrumtech",
+    "fulcrumassets",
+    "ecorp",
+    "blade",
+    "kuai-gong",
+    "megacorp",
+    "b-and-a",
+    "4sigma",
+    "vitalife",
+    "zb-def",
+    "rothman-uni",
+    "netlink",
+    "omega-net",
+    "The-Cave",
+    "zb-institute",
+    "alpha-ent",
+    "powerhouse-fitness",
+    "w0r1d_d43m0n"
+  ]); //getAvailableForBackdoorServers(ns) // todo remove old:
 
   var servers;
   var targets;
@@ -109,7 +135,7 @@ export async function main(ns) {
 
     for (var server of servers) {
       // transfer files to the servers
-      await ns.scp(files, "home", server);
+      await ns.scp(files, server);
       // ToDo: Not efficient to loop through all servers always. Could be optimized to track which server was optimized and scp only once.
 
       // backdoor faction servers automatically requires singularity module
@@ -764,83 +790,6 @@ export function getStockPortContent(ns, portNumber, content) {
   return content;
 }
 
-
-// run netcrawler.js <starting-host>
-function getAvailableForBackdoorServers(ns) {
-  let home = new Object();
-  let nodeMap = new Map();
-  let availableForBackdoor = new Map()
-  home.name =  "home";
-  home.parent = null;
-  home.neighbors = ns.scan(home.name);
-  nodeMap.set(home.name, home);
-  crawl(ns, home, nodeMap);
-  printMap(ns, home, nodeMap, "");
-}
-
-/** @param {NS} ns **/
-function crawl(ns, node, nodeMap) {
-  node.neighbors.forEach(nodeName => {
-    if (nodeMap.has(nodeName)) {
-      return;
-    }
-    let newNode = new Object();
-    newNode.name = nodeName;
-    newNode.parent = node;
-    newNode.neighbors = ns.scan(newNode.name);
-    nodeMap.set(newNode.name, newNode);
-    crawl(ns, newNode, nodeMap);
-  });
-}
-
-/** @param {NS} ns **/
-function printMap(ns, node, nodeMap, indent) {
-  ns.tprintf(`${ indent }${ node.name }(${ ns.hasRootAccess(node.name) ? "Y" : "N" }|${ ns.getServerNumPortsRequired(node.name) }|${ ns.getServerRequiredHackingLevel(node.name) }|${ ns.nFormat(ns.getServerMoneyAvailable(node.name), "0.0a") })`);
-  nodeMap.delete(node.name);
-  indent = adjustIndent(indent, node, nodeMap);
-  printIndent(ns, indent, node);
-
-  node.neighbors.forEach(adjacentName => {
-    if (nodeMap.has(adjacentName)) {
-      printMap(ns, nodeMap.get(adjacentName), nodeMap, indent);
-    }
-  });
-}
-
-/** @param {NS} ns **/
-function printIndent(ns, indent, node) {
-  if (node.neighbors.length > 1) {
-    ns.tprintf(indent + "|");
-  }
-}
-
-function adjustIndent(indent, node, nodeMap) {
-  const INDENT_SPACE = 6;
-  for (let i = 0; i < INDENT_SPACE; i++) {
-    if (i === 0 && hasMoreSiblings(node, nodeMap)) {
-      indent += "|";
-    } else {
-      indent += " ";
-    }
-  }
-  return indent;
-}
-
-function hasMoreSiblings(node, nodeMap) {
-  let hasSiblings = false;
-  if (node.parent === null) {
-    return hasSiblings;
-  }
-  node
-    .parent
-    .neighbors
-    .forEach(adjacent => {
-      if (nodeMap.has(adjacent)) {
-        hasSiblings = true;
-      }
-    });
-  return hasSiblings;
-}
 
 /*
 Design goals
