@@ -17,6 +17,7 @@ import {
   uniquePathsI,
   uniquePathsII,
   encryptionICaesarCipher,
+  encryptionIIVigenereCipher,
 } from './_solvers.js'
 
 export async function main(ns) {
@@ -143,7 +144,7 @@ function solve(type, data, server, contract, ns, returnReward) {
       solution = encryptionICaesarCipher(data);
       break;
     case "Encryption II: Vigenère Cipher":
-      solution = "";
+      solution = encryptionIIVigenereCipher(data);
       break;
     case "Shortest Path in a Grid":
       solution = ""; //shortestPathInAGrid(data)

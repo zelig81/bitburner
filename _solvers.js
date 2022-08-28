@@ -766,4 +766,11 @@ export const encryptionIIVigenereCipher = (data) => {
 
   Return the ciphertext as uppercase string.
   */
+  let text = data[0]
+  let citherKeyword = data[1]
+  let output = []
+  for (const letterIndex in text) {
+    output.push(String.fromCharCode('A'.charCodeAt(0) + (text[letterIndex].charCodeAt(0) - 2 * 'A'.charCodeAt(0) + citherKeyword[letterIndex % citherKeyword.length].charCodeAt(0)) % 26))
+  }
+  return output.join('')
 }

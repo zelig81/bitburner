@@ -5,6 +5,7 @@ import {
   compressionIILZ,
   factor,
   encryptionICaesarCipher,
+  encryptionIIVigenereCipher,
 } from '../_solvers.js'
 
 describe('arrayJumpingGameII', () => {
@@ -64,5 +65,14 @@ describe('factor', function () {
 describe('encryptionICaesarCipher', function () {
   test('["LOGIC VIRUS CLOUD TABLE SHIFT", 20] -> RUMOI BOXAY IRUAJ ZGHRK YNOLZ', () => {
     expect(encryptionICaesarCipher(["LOGIC VIRUS CLOUD TABLE SHIFT", 20])).toEqual("RUMOI BOXAY IRUAJ ZGHRK YNOLZ");
+  });
+});
+
+describe('encryptionIIVigenereCipher', function () {
+  test('["SHELLMACROINBOXQUEUEARRAY", "GIGABYTE"] -> YPKLMKTGXWONCMQUAMAEBPKEE', () => {
+    expect(encryptionIIVigenereCipher(["SHELLMACROINBOXQUEUEARRAY", "GIGABYTE"])).toEqual("YPKLMKTGXWONCMQUAMAEBPKEE");
+  });
+  test('["DEBUGCACHEVIRUSTABLEEMAIL", "CLIPBOARD"] -> FPJJHQATKGGQGVGTRENPMBBWL', () => {
+    expect(encryptionIIVigenereCipher(["DEBUGCACHEVIRUSTABLEEMAIL", "CLIPBOARD"])).toEqual("FPJJHQATKGGQGVGTRENPMBBWL");
   });
 });
