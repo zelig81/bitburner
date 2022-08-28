@@ -16,6 +16,7 @@ import {
   spiral,
   uniquePathsI,
   uniquePathsII,
+  encryptionICaesarCipher,
 } from './_solvers.js'
 
 export async function main(ns) {
@@ -136,6 +137,12 @@ function solve(type, data, server, contract, ns, returnReward) {
       solution = "";
       break;
     case "HammingCodes: Encoded Binary to Integer":
+      solution = "";
+      break;
+    case "Encryption I: Caesar Cipher":
+      solution = encryptionICaesarCipher(data);
+      break;
+    case "Encryption II: Vigenère Cipher":
       solution = "";
       break;
     case "Shortest Path in a Grid":

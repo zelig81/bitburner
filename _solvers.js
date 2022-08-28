@@ -127,6 +127,7 @@ export const compressionIIILZ = (data) => {
   You are given the following input string:
       eDKeD4vD4vD4vD4bdBCchzBCchzBCczBCczgBCczgBCJe4e4e4e4e4e44444ze4444ze4
       whhhhhhhhhh2ghhhhh2ux8ux8uxe6p6ZeMBp6ZeMBp626ZBpBd1OBd1O2gupq
+      gTVrlygTVrly124ERae6r4ERae6rlwnHHHHHHHHHHpUssBeeeeee4Cu4COs
   Encode it using Lempel-Ziv encoding with the minimum possible output length.
 
   Examples (some have other possible encodings of minimal length):
@@ -279,6 +280,7 @@ export const totalWayToSumII = (data) => {
   How many different distinct ways can the number 59 be written as a sum of integers contained in the set:
 
   [2,3,4,6,8,9,11,12,13,15,18]?
+  [2,4,5,6,8,9,12,15,20]?
 
   You may use each integer in the set zero or more times.
   */
@@ -569,14 +571,20 @@ function isValidIpSegment(segment) {
 //GREATEST FACTOR
 
 export const factor = (num) => {
+  let listDivisors = []
+  let result = num
   for (let div = 2; div <= Math.sqrt(num); div++) {
-    if (num % div != 0) {
-      continue;
+    while (result % div == 0) {
+      listDivisors.push(div)
+      if (result / div == 1) {
+        break
+      } else {
+        result = result / div
+      }
     }
-    num = num / div;
-    div = 2;
   }
-  return num;
+  console.debug(`factor divisors: ${ listDivisors }`)
+  return result;
 }
 
 //SPIRALIZE Matrix
@@ -702,6 +710,31 @@ export const shortestPathInAGrid = (data) => {
   */
 }
 
+export const encryptionICaesarCipher = (data) => {
+  /*
+  Encryption I: Caesar Cipher
+
+  Caesar cipher is one of the simplest encryption technique. It is a type of substitution cipher in which each letter in the plaintext is replaced by a letter some fixed number of positions down the alphabet. For example, with a left shift of 3, D would be replaced by A, E would become B, and A would become X (because of rotation).
+
+  You are given an array with two elements:
+    ["LOGIC VIRUS CLOUD TABLE SHIFT", 20]
+  The first element is the plaintext, the second element is the left shift value.
+
+  Return the ciphertext as uppercase string. Spaces remains the same.
+  */
+  let text = data[0]
+  let shift = data[1]
+  let output = []
+  for (const letterIndex in text) {
+    if (text[letterIndex] === ' ') {
+      output.push(" ")
+    } else {
+      output.push(String.fromCharCode(((26 + text[letterIndex].charCodeAt(0) - 'A'.charCodeAt(0)) - shift) % 26 + 'A'.charCodeAt(0)))
+    }
+  }
+  return output.join('')
+}
+
 export const encryptionIIVigenereCipher = (data) => {
   /*
   Encryption II: Vigenère Cipher
@@ -728,6 +761,7 @@ export const encryptionIIVigenereCipher = (data) => {
 
   You are given an array with two elements:
     ["SHELLMACROINBOXQUEUEARRAY", "GIGABYTE"]
+    ["DEBUGCACHEVIRUSTABLEEMAIL", "CLIPBOARD"]
   The first element is the plaintext, the second element is the keyword.
 
   Return the ciphertext as uppercase string.

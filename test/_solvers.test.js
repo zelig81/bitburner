@@ -3,6 +3,8 @@ import {
   compressionIRLE,
   hammingCodesIntegerToBinary,
   compressionIILZ,
+  factor,
+  encryptionICaesarCipher,
 } from '../_solvers.js'
 
 describe('arrayJumpingGameII', () => {
@@ -51,4 +53,16 @@ describe('compressionIILZ', function () {
   // });
 
   // 7v67M066560586hs7b67342yS87645uyO6127njn5jzm692gW1876d0fXmL5713 - does not work
+});
+
+describe('factor', function () {
+  test('866637924 -> 1861', function () {
+    expect(factor(866637924)).toEqual(1861);
+  });
+});
+
+describe('encryptionICaesarCipher', function () {
+  test('["LOGIC VIRUS CLOUD TABLE SHIFT", 20] -> RUMOI BOXAY IRUAJ ZGHRK YNOLZ', () => {
+    expect(encryptionICaesarCipher(["LOGIC VIRUS CLOUD TABLE SHIFT", 20])).toEqual("RUMOI BOXAY IRUAJ ZGHRK YNOLZ");
+  });
 });
