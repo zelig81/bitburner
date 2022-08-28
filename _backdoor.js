@@ -7,19 +7,20 @@ export async function main(ns) {
     var networkPath = ["home"];
     var networkPath = scanAll(ns, "home", target, networkPath);
 
-    for (var server of networkPath) {
-      ns.singularity.connect(server)
-      if (server === target) {
-        let isBackdoorInstalled = ns.getServer(server).backdoorInstalled
-        if (isBackdoorInstalled) {
-          ns.tprint("Already Installed backdoor on " + server);
-        } else {
-          await ns.singularity.installBackdoor();
-          isBackdoorInstalled = ns.getServer(target).backdoorInstalled
-          ns.tprint("Installed backdoor on " + server + " - " + isBackdoorInstalled);
+    if (networkPath) {
+      for (var server of networkPath) {
+        ns.singularity.connect(server)
+        if (server === target) {
+          let serverObject = ns.getServer(server)
+          let isBackdoorInstalled = serverObject.backdoorInstalled
+          if (!isBackdoorInstalled && serverObject.hasAdminRights && !serverObject.purchasedByPlayer) {
+            await ns.singularity.installBackdoor();
+            isBackdoorInstalled = ns.getServer(target).backdoorInstalled
+            ns.tprint("Installed backdoor on " + server + " - " + isBackdoorInstalled);
+          }
+          ns.singularity.connect("home");
+          return isBackdoorInstalled;
         }
-        ns.singularity.connect("home");
-        return isBackdoorInstalled;
       }
     }
   }

@@ -67,36 +67,7 @@ export async function main(ns) {
   ns.disableLog("ALL");
   ns.tail()
 
-  // automatically backdoor these servers. Requires singularity functions.
-  let backdoorServersIgnore = new Set(["w0r1d_d43m0n"])
-  var backdoorServers = new Set([
-    "CSEC",
-    "I.I.I.I",
-    "avmnite-02h",
-    "run4theh111z",
-    "clarkinc",
-    "nwo",
-    "omnitek",
-    "fulcrumtech",
-    "fulcrumassets",
-    "ecorp",
-    "blade",
-    "kuai-gong",
-    "megacorp",
-    "b-and-a",
-    "4sigma",
-    "vitalife",
-    "zb-def",
-    "rothman-uni",
-    "netlink",
-    "stormtech",
-    "omega-net",
-    "The-Cave",
-    "zb-institute",
-    "alpha-ent",
-    "powerhouse-fitness",
-    "w0r1d_d43m0n"
-  ]); //getAvailableForBackdoorServers(ns) // todo remove old:
+  let knownServers = new Map()
 
   var servers;
   var targets;
@@ -135,24 +106,25 @@ export async function main(ns) {
     // ns.print(`servers:${[...servers.values()]}`)
 
     for (var server of servers) {
-      // transfer files to the servers
-      await ns.scp(files, server);
-      // ToDo: Not efficient to loop through all servers always. Could be optimized to track which server was optimized and scp only once.
-
-      // backdoor faction servers automatically requires singularity module
-      // modify singularityFunctionsAvailable at the top to de- / activate
-      if (singularityFunctionsAvailable == true) {
-        for (var backdoorServer of backdoorServers.values()) {
-          if (server == backdoorServer) {
-            if (ns.getServerRequiredHackingLevel(server) <= ns.getHackingLevel()) {
-              const homeMaxRam = ns.getServerMaxRam("home");
-              const homeUsedRam = ns.getServerUsedRam("home")
-              const homeFreeRam = homeMaxRam - homeUsedRam;
-              if (homeFreeRam >= backdoorScriptRam) {
-                const backdoorSuccess = ns.exec(backdoorScript, "home", 1, server);
-                ns.print("INFO backdoor on " + server + " - " + backdoorSuccess);
-                backdoorServers.delete(backdoorServer);
-              }
+      if (!knownServers.has(server)) {
+        knownServers.set(server, {
+          isBackdoored: false,
+          requiredHackingLevel: ns.getServerRequiredHackingLevel(server),
+        })
+        // transfer files to the servers
+        await ns.scp(files, server);
+      } else {
+        // backdoor faction servers automatically requires singularity module
+        // modify singularityFunctionsAvailable at the top to de- / activate
+        if (singularityFunctionsAvailable == true) {
+          if (knownServers.get(server).requiredHackingLevel <= ns.getHackingLevel() && !knownServers.get(server).isBackdoored) {
+            const homeMaxRam = ns.getServerMaxRam("home");
+            const homeUsedRam = ns.getServerUsedRam("home")
+            const homeFreeRam = homeMaxRam - homeUsedRam;
+            if (homeFreeRam >= backdoorScriptRam) {
+              const backdoorSuccess = ns.exec(backdoorScript, "home", 1, server);
+              ns.print("INFO backdoor on " + server + " - " + backdoorSuccess);
+              knownServers.set(server, { ...knownServers.get(server), isBackdoored: true });
             }
           }
         }
