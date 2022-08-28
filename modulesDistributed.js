@@ -89,6 +89,7 @@ export async function main(ns) {
     "zb-def",
     "rothman-uni",
     "netlink",
+    "stormtech",
     "omega-net",
     "The-Cave",
     "zb-institute",

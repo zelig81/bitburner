@@ -8,12 +8,18 @@ export async function main(ns) {
     var networkPath = scanAll(ns, "home", target, networkPath);
 
     for (var server of networkPath) {
-      ns.connect(server)
-      if (server == target) {
-        var backdoorSuccess = await ns.singularity.installBackdoor();
-        ns.tprint("Installed backdoor on " + server + " - " + backdoorSuccess);
+      ns.singularity.connect(server)
+      if (server === target) {
+        let isBackdoorInstalled = ns.getServer(server).backdoorInstalled
+        if (isBackdoorInstalled) {
+          ns.tprint("Already Installed backdoor on " + server);
+        } else {
+          await ns.singularity.installBackdoor();
+          isBackdoorInstalled = ns.getServer(target).backdoorInstalled
+          ns.tprint("Installed backdoor on " + server + " - " + isBackdoorInstalled);
+        }
         ns.singularity.connect("home");
-        return backdoorSuccess;
+        return isBackdoorInstalled;
       }
     }
   }

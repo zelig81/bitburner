@@ -176,7 +176,7 @@ function currentActionUseful(ns, player, currentWork, factions) {
   if (currentWork) {
     if (currentWork.type === "FACTION") {
       if (factions.has(currentWork.factionName)) {
-        var repRemaining = factions.get(currentWork.factionName) // todo remove old: - player.workRepGained;
+        var repRemaining = factions.get(currentWork.factionName)
         if (repRemaining > 0) {
           // working for a faction needing more reputation for augmentations
           if (playerControlPort.empty() && currentWork.factionWorkType === "HACKING") {
@@ -189,9 +189,21 @@ function currentActionUseful(ns, player, currentWork, factions) {
             // only write to ports if empty
             playerControlPort.write(false);
           }
-          // seems a cycle is .2 ms, so RepGainRate * 5 is gain per second
-          // todo remove old: var reputationTimeRemaining = repRemaining / (player.workRepGainRate * 5);
-          ns.print("Reputation remaining: " + ns.nFormat(repRemaining, "0a")) // todo remove old: + " in " + ns.nFormat(reputationTimeRemaining / 60, "0a") + " min");
+          let factionRepGain = ns.formulas.work.factionGains(player, "HACKING", ns.singularity.getFactionFavor(currentWork.factionName))
+          let focusBonus = ns.singularity.getOwnedAugmentations().includes("Neuroreceptor Management Implant") ? 1 : 0.8;
+          let appliedFocusBonus = ns.singularity.isFocused() ? 1 : focusBonus
+          let reputationGain = (1 + (1 * Math.pow(player.skills.intelligence, 0.8)) / 600) * factionRepGain.reputation * factionRepGain.hackExp * appliedFocusBonus
+
+          let reputationTimeRemaining = repRemaining / reputationGain;
+          let humanReadableReputationTimeRemaining = ""
+          if (reputationTimeRemaining < 60) {
+            humanReadableReputationTimeRemaining = ns.nFormat(reputationTimeRemaining, "0a") + " sec"
+          } else if (reputationTimeRemaining < 3600) {
+            humanReadableReputationTimeRemaining = ns.nFormat(reputationTimeRemaining / 60, "0.0a") + " min"
+          } else {
+            humanReadableReputationTimeRemaining = ns.nFormat(reputationTimeRemaining / 3600, "0.0a") + " hour(s)"
+          }
+          ns.print("Reputation remaining: " + ns.nFormat(repRemaining, "0.0a") + " in " + humanReadableReputationTimeRemaining);
           return true;
         } else {
           ns.print("Max Reputation @ " + currentWork.factionName);
