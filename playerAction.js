@@ -1,6 +1,7 @@
 // https://github.com/kamukrass/Bitburner/blob/develop/playerAction.js
 const studyUntilHackLevel = 50;
 const moneyThreshold = 2;
+const isHomeComputerUpgradeEnabled = true
 
 const megaCorps = [
   "Blade Industries", // hack+combat
@@ -41,7 +42,7 @@ export async function main(ns) {
     var player = ns.getPlayer();
     let currentWork = ns.singularity.getCurrentWork()
 
-    getPrograms(ns, player);
+    getPrograms(ns);
 
     joinFactions(ns);
 
@@ -83,7 +84,7 @@ function upgradeHomeServer(ns, player) {
   // TODO: Consider moving this to the trading script, fits better there (and saves ram here)
   // ns.purchase4SMarketDataTixApi();
   //}
-  if (player.money > ns.singularity.getUpgradeHomeRamCost() * moneyThreshold) {
+  if (player.money > ns.singularity.getUpgradeHomeRamCost() * moneyThreshold && isHomeComputerUpgradeEnabled) {
     if (!player.factions.includes("CyberSec") || ns.singularity.getUpgradeHomeRamCost() < 2e9
       || (player.has4SDataTixApi && ns.singularity.getUpgradeHomeRamCost() < 0.2 * player.money)) {
       // Upgrade slowly in the first run while we save money for 4S or the first batch of augmentations
@@ -96,9 +97,10 @@ function upgradeHomeServer(ns, player) {
   }
 }
 
-function getPrograms(ns, player) {
+function getPrograms(ns) {
+  let player = ns.getPlayer()
   if (!player.tor) {
-    if (player.money > 1.7 * 10 ** 6) {
+    if (player.money > 200 * 1000 * moneyThreshold) {
       ns.singularity.purchaseTor();
       ns.print("Purchased TOR");
       ns.toast("Purchased TOR");
@@ -107,10 +109,21 @@ function getPrograms(ns, player) {
       return;
     }
   }
-  ns.singularity.purchaseProgram("BruteSSH.exe");
-  ns.singularity.purchaseProgram("FTPCrack.exe");
-  ns.singularity.purchaseProgram("relaySMTP.exe");
-  if (player.has4SDataTixApi) {
+
+  player = ns.getPlayer()
+  if (!ns.fileExists("BruteSSH.exe") && player.money > 500 * 1000 * moneyThreshold) {
+    ns.singularity.purchaseProgram("BruteSSH.exe");
+  }
+  player = ns.getPlayer()
+  if (!ns.fileExists("FTPCrack.exe") && player.money > 1.5 * 1000 * 1000 * moneyThreshold) {
+    ns.singularity.purchaseProgram("FTPCrack.exe");
+  }
+  player = ns.getPlayer()
+  if (!ns.fileExists("BruteSSH.exe") && player.money > 5 * 1000 * 1000 * moneyThreshold) {
+    ns.singularity.purchaseProgram("relaySMTP.exe");
+  }
+  player = ns.getPlayer()
+  if (player.has4SDataTixApi && player.money > 280 * 1000 * 1000 * moneyThreshold) {
     // do not buy more before 4s data access bought
     ns.singularity.purchaseProgram("HTTPWorm.exe");
     ns.singularity.purchaseProgram("SQLInject.exe");
@@ -124,7 +137,7 @@ function chooseAction(ns, sleepTime, player, factions) {
   if (player.skills.hacking < studyUntilHackLevel) { // ns.getHackingLevel()
     ns.singularity.universityCourse("rothman university", "Study Computer Science", focus);
   }
-  else if (factions.size > 0) {
+  if (factions.size > 0) {
     var faction = factions.keys().next().value;
     const factionsFieldWork = ["Slum Snakes", "Tetrads"];
     var wType = "Hacking Contracts";
@@ -139,8 +152,7 @@ function chooseAction(ns, sleepTime, player, factions) {
     else {
       ns.print("Could not perform intended action: " + faction + " -> " + wType);
     }
-  }
-  else if (player.hacking >= 250) {
+  } else if (player.hacking >= 1100) {
     var corpsToWorkFor = getCorpsForReputation(ns, factions);
     // ns.print("Corps to work for: " + corpsToWorkFor);
     if (corpsToWorkFor.length > 0) {
@@ -174,6 +186,14 @@ function applyForPromotion(ns, player, currentWork) {
 function currentActionUseful(ns, player, currentWork, factions) {
   var playerControlPort = ns.getPortHandle(3); // port 2 is hack
   if (currentWork) {
+    if (currentWork.type === "CREATE_PROGRAM") {
+      return true;
+    }
+    if (currentWork.type == "CLASS") {
+      if (player.skills.hacking < studyUntilHackLevel) { // ns.getHackingLevel()
+        return true;
+      }
+    }
     if (currentWork.type === "FACTION") {
       if (factions.has(currentWork.factionName)) {
         var repRemaining = factions.get(currentWork.factionName)
@@ -225,8 +245,9 @@ function currentActionUseful(ns, player, currentWork, factions) {
         playerControlPort.write(false);
       }
     }
+
     if (currentWork.type === "COMPANY") {
-      var reputation = ns.singularity.getCompanyRep(currentWork.companyName) // todo remove old: + (player.workRepGained * 3 / 4);
+      var reputation = ns.singularity.getCompanyRep(currentWork.companyName)
       ns.print("Company reputation: " + ns.nFormat(reputation, "0a"));
       if (factions.has(currentWork.companyName)) {
         return false;
@@ -245,13 +266,6 @@ function currentActionUseful(ns, player, currentWork, factions) {
         }
       }
       return false;
-    } else if (currentWork.type === "CREATE_PROGRAM") {
-      return true;
-    }
-  }
-  if (player.workType == "Studying or Taking a class at university") {
-    if (player.skills.hacking < studyUntilHackLevel) { // ns.getHackingLevel()
-      return true;
     }
   }
   return false;
@@ -298,6 +312,7 @@ function buyAugments(ns, player) {
     }
   }
 
+  // make map of augmentations to factions
   let augmentationsOfFactions = {}
   for (let augmentation of sortedAugmentations) {
     if (!(augmentation[0] in augmentationsOfFactions)) {
@@ -342,7 +357,7 @@ function buyAugments(ns, player) {
       augmentationCostMultiplier *= 1.9;
     }
   }
-  let printableSortedAugmentations = sortedAugmentations.map(([augmentation, price, faction]) => [augmentation, faction, ns.nFormat(price, "$0.0a")])
+  let printableSortedAugmentations = sortedAugmentations.map(([augmentation, price, _]) => [augmentation, ns.nFormat(price, "$0.0a"), augmentationsOfFactions[augmentation]])
 
   ns.print("Augmentation purchase order: " + JSON.stringify(printableSortedAugmentations))
   ns.print("Current augmentation purchase cost: " + ns.nFormat(overallAugmentationCost, "0.0a"));
@@ -372,6 +387,10 @@ function maxAugmentRep(ns, faction) {
         }
       }
       maxReputationRequired = Math.max(maxReputationRequired, ns.singularity.getAugmentationRepReq(augmentation));
+      let donateFavorLevel = ns.formulas.reputation.calculateFavorToRep(150)
+      if (maxReputationRequired > donateFavorLevel) {
+        return donateFavorLevel
+      }
     }
     return maxReputationRequired;
     // go for the last augmentation in the list. Assumption: Higher rep augs from follow-up factions

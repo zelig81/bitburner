@@ -131,13 +131,13 @@ function tendStocks(ns) {
   if (growStockPort.empty()) {
     // only write to ports if empty
     for (const sym of longStocks) {
-      // ns.print("INFO grow " + sym);
+      // ns.print("INFO sent grow signal for " + sym);
       growStockPort.write(getSymServer(sym));
     }
   }
   if (hackStockPort.empty()) {
     for (const sym of shortStocks) {
-      // ns.print("INFO hack " + sym);
+      // ns.print("INFO sent hack signal for " + sym);
       hackStockPort.write(getSymServer(sym));
     }
   }

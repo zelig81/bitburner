@@ -225,7 +225,11 @@ function manageAndHack(ns, freeRams, servers, targets, growStocks, hackStocks) {
       // we cannot determine a perfect attack strategy without interfering with the ongoing attack
       continue;
     }
-
+    // let valuesGrow = []
+    // let valuesHack = []
+    // growStocks.forEach(v => valuesGrow.push(v))
+    // hackStocks.forEach(v => valuesHack.push(v))
+    // ns.print(`sent for grow stock: ${ valuesGrow }, sent for hack stocks: ${ valuesHack }`)
     const minSec = ns.getServerMinSecurityLevel(target);
     const sec = ns.getServerSecurityLevel(target);
     var addedGrowSecurity = 0;
@@ -482,12 +486,12 @@ function manageAndHack(ns, freeRams, servers, targets, growStocks, hackStocks) {
     var profitM = profit * 60 / weakTime;
     profitsm.set(target, profitM);
 
-    if (parallelAttacks <= 1) {
-      ns.print("INFO " + maxPercentage.toFixed(1) + " WGH " + target + " " + weakThreads + " | " + growThreads + " | " + hackThreads + " | $/t/s " + profitM.toFixed(2));
-    }
-    else {
-      ns.print("INFO " + parallelAttacks + "   WGH " + target + " " + weakThreads + " | " + growThreads + " | " + hackThreads + " | $/t/s " + profitM.toFixed(2));
-    }
+    // if (parallelAttacks <= 1) {
+    //   ns.print("INFO " + maxPercentage.toFixed(1) + " WGH " + target + " " + weakThreads + " | " + growThreads + " | " + hackThreads + " | $/t/s " + profitM.toFixed(2));
+    // }
+    // else {
+    //   ns.print("INFO " + parallelAttacks + "   WGH " + target + " " + weakThreads + " | " + growThreads + " | " + hackThreads + " | $/t/s " + profitM.toFixed(2));
+    // }
 
     var growStock = growStocks.has(target);
     var hackStock = hackStocks.has(target);
