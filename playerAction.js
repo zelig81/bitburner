@@ -1,11 +1,26 @@
-// https://github.com/kamukrass/Bitburner/blob/develop/playerAction.js
+// heavily refactored https://github.com/kamukrass/Bitburner/blob/develop/playerAction.js
 const studyUntilHackLevel = 50;
 const moneyThreshold = 2;
 const isHomeComputerUpgradeEnabled = true
+//todo: make initial money/programs without money
+//todo: donate for favors if > 150 favor && money > 500t && there are augmentations to purchase not in the list of other factions
+//todo: get overall faction/companies reputation to gain + overall time to gain it.
+//todo: reduce list of augmentations to purchase by finding least reputation to gain
+// todo: make list of work priority:
+/*
+- learn hacking
+- program creation for start
+- crime/company work for initial money till ram upgrad/home servers can be purchased
+  - gym? for homicide
+  - homicide till 30 kills
+- faction work (without 150 favors)
+- company work by list
+- crime kidnap if no other job
+*/
 
 const megaCorps = [
-  "Blade Industries", // hack+combat
   "ECorp", // mostly hacking
+  "Blade Industries", // hack+combat
   "NWO", // combat + hack + all skills unique + strength unique
   "Fulcrum Secret Technologies", // hack + combat
   "OmniTek Incorporated", // combat + reputation + charisma + hack unique
@@ -18,8 +33,20 @@ const megaCorps = [
 
 const cityFactions = ["Sector-12", "Chongqing", "New Tokyo", "Ishima", "Aevum", "Volhaven"];
 
-const crimes = ["Shoplift", "RobStore", "Mug", "Larceny", "Deal Drugs", "Bond Forgery", "Traffick Arms", "Homicide",
-  "Grand Theft Auto", "Kidnap", "Assassination", "Heist"];
+const crimes = [
+  // "Shoplift",
+  "ASSASSINATION",
+  "HOMICIDE",
+  "KIDNAP",
+  "MUG",
+  "ROBSTORE",
+  // "Larceny",
+  // "Deal Drugs",
+  // "Bond Forgery",
+  // "Traffick Arms",
+  // "Grand Theft Auto",
+  // "Heist"
+];
 
 const ignoreFactionAugs = new Map([
   ["CyberSec", ['Cranial Signal Processors - Gen II']],
@@ -52,9 +79,9 @@ export async function main(ns) {
 
     var factionsForReputation = getFactionsForReputation(ns, player);
     ns.print("Factions for Reputation: " + [...factionsForReputation.keys()]);
-    ns.print("Corps to work for reputation: " + getCorpsForReputation(factionsForReputation))
+    ns.print("Corps to work for reputation: " + getCorpsForReputation(ns))
 
-    var actionUseful = currentActionUseful(ns, player, currentWork, factionsForReputation);
+    var actionUseful = currentActionUseful(ns, player, factionsForReputation);
     ns.print("Current action useful: " + actionUseful);
 
     if (!actionUseful) {
@@ -68,9 +95,11 @@ export async function main(ns) {
         ns.print(`Work for company: ${ currentWork.companyName }`)
       } else if (currentWork.type === "FACTION") {
         ns.print(`Work for faction: ${ currentWork.factionName } by making ${ currentWork.factionWorkType }`)
+      } else if (currentWork.type === "CLASS") {
+        ns.print(`Study: ${ currentWork.classType } at  ${ currentWork.location }`)
       }
     }
-    ns.print("Employed on jobs: " + JSON.stringify(player.jobs))
+    // ns.print("Employed on jobs: " + JSON.stringify(player.jobs))
 
     ns.print("Karma: " + ns.heart.break());
     ns.print("Kills: " + player.numPeopleKilled);
@@ -97,10 +126,24 @@ function upgradeHomeServer(ns, player) {
   }
 }
 
+function getSingleProgram(ns, program, threshold) {
+  let player = ns.getPlayer()
+  let focus = ns.singularity.isFocused()
+
+  if (!ns.fileExists(program)) {
+    if (player.money > threshold * moneyThreshold) {
+      ns.singularity.purchaseProgram(program);
+    } else {
+      ns.singularity.createProgram(program, focus)
+    }
+  }
+
+}
+
 function getPrograms(ns) {
   let player = ns.getPlayer()
   if (!player.tor) {
-    if (player.money > 200 * 1000 * moneyThreshold) {
+    if (player.money > 2 * 10 ** 5 * moneyThreshold) {
       ns.singularity.purchaseTor();
       ns.print("Purchased TOR");
       ns.toast("Purchased TOR");
@@ -110,20 +153,12 @@ function getPrograms(ns) {
     }
   }
 
+  getSingleProgram(ns, "BruteSSH.exe", 5 * 10 ** 5)
+  getSingleProgram(ns, "FTPCrack.exe", 1.5 * 10 ** 6)
+  getSingleProgram(ns, "relaySMTP.exe", 5 * 10 ** 5)
+
   player = ns.getPlayer()
-  if (!ns.fileExists("BruteSSH.exe") && player.money > 500 * 1000 * moneyThreshold) {
-    ns.singularity.purchaseProgram("BruteSSH.exe");
-  }
-  player = ns.getPlayer()
-  if (!ns.fileExists("FTPCrack.exe") && player.money > 1.5 * 1000 * 1000 * moneyThreshold) {
-    ns.singularity.purchaseProgram("FTPCrack.exe");
-  }
-  player = ns.getPlayer()
-  if (!ns.fileExists("BruteSSH.exe") && player.money > 5 * 1000 * 1000 * moneyThreshold) {
-    ns.singularity.purchaseProgram("relaySMTP.exe");
-  }
-  player = ns.getPlayer()
-  if (player.has4SDataTixApi && player.money > 280 * 1000 * 1000 * moneyThreshold) {
+  if (player.has4SDataTixApi && player.money > 280 * 10 ** 6 * moneyThreshold) {
     // do not buy more before 4s data access bought
     ns.singularity.purchaseProgram("HTTPWorm.exe");
     ns.singularity.purchaseProgram("SQLInject.exe");
@@ -131,12 +166,20 @@ function getPrograms(ns) {
 }
 
 function chooseAction(ns, sleepTime, player, factions) {
-  var focus = ns.singularity.isFocused();
-  //ns.print("Focus: " + focus);
+  let focus = ns.singularity.isFocused();
+  let currentWork = ns.singularity.getCurrentWork()
 
-  if (player.skills.hacking < studyUntilHackLevel) { // ns.getHackingLevel()
+  //ns.print("Focus: " + focus);
+  if (
+    player.skills.hacking < studyUntilHackLevel &&
+    (currentWork == null ||
+    currentWork.type !== "CLASS")
+  ) {
     ns.singularity.universityCourse("rothman university", "Study Computer Science", focus);
+    return sleepTime;
   }
+
+
   if (factions.size > 0) {
     var faction = factions.keys().next().value;
     const factionsFieldWork = ["Slum Snakes", "Tetrads"];
@@ -148,51 +191,54 @@ function chooseAction(ns, sleepTime, player, factions) {
     if (success) {
       ns.print("Start working for faction " + faction);
       ns.toast("Start working for faction " + faction, "success", 5000);
-    }
-    else {
+      return sleepTime;
+    } else {
       ns.print("Could not perform intended action: " + faction + " -> " + wType);
     }
-  } else if (player.hacking >= 1100) {
-    var corpsToWorkFor = getCorpsForReputation(ns, factions);
-    // ns.print("Corps to work for: " + corpsToWorkFor);
-    if (corpsToWorkFor.length > 0) {
-      applyForPromotion(ns, player, corpsToWorkFor[0]);
-      ns.print("Start working for " + corpsToWorkFor[0]);
-      ns.toast("Start working for " + corpsToWorkFor[0]);
-    }
+  }
+
+  var corpsToWorkFor = getCorpsForReputation(ns);
+
+  if (player.skills.hacking >= 1100 && corpsToWorkFor.length > 0) {
+    applyForPromotion(ns, corpsToWorkFor[0]);
+    ns.print(`chooseAction: corpsToWorkFor: ${ corpsToWorkFor }`)
+    ns.print("Start working for " + corpsToWorkFor[0]);
+    ns.toast("Start working for " + corpsToWorkFor[0]);
   } else {
     ns.toast("Crime Time!");
     var crimeTime = commitCrime(ns, player, ns.singularity.isFocused());
-    return sleepTime;
   }
   return sleepTime;
 }
 
-function applyForPromotion(ns, player, currentWork) {
+function applyForPromotion(ns, corpToWorkFor) {
+  let focus = ns.singularity.isFocused();
+  let currentWork = ns.singularity.getCurrentWork()
 
   var career = "it"
 
-  var success = ns.singularity.applyToCompany(currentWork.companyName, career);
+  var success = ns.singularity.applyToCompany(corpToWorkFor, career);
 
   if (success) {
     ns.toast("Got a company promotion!");
   }
-  if (!(currentWork.companyName in player.jobs)) {
-
+  if (currentWork == null || (currentWork.type !== "COMPANY" || currentWork.companyName !== corpToWorkFor)) {
+    ns.singularity.workForCompany(corpToWorkFor, focus);
   }
-  // ns.singularity.workForCompany(currentWork.companyName);
+
 }
 
-function currentActionUseful(ns, player, currentWork, factions) {
+function currentActionUseful(ns, player, factions) {
+  let currentWork = ns.singularity.getCurrentWork()
   var playerControlPort = ns.getPortHandle(3); // port 2 is hack
   if (currentWork) {
-    if (currentWork.type === "CREATE_PROGRAM") {
-      return true;
-    }
     if (currentWork.type == "CLASS") {
       if (player.skills.hacking < studyUntilHackLevel) { // ns.getHackingLevel()
         return true;
       }
+    }
+    if (currentWork.type === "CREATE_PROGRAM") {
+      return true;
     }
     if (currentWork.type === "FACTION") {
       if (factions.has(currentWork.factionName)) {
@@ -230,13 +276,11 @@ function currentActionUseful(ns, player, currentWork, factions) {
           ns.toast("Max Reputation @ " + currentWork.factionName, "success", 5000);
           return false;
         }
-      }
-      else {
+      } else {
         if (playerControlPort.empty()) {
           // only write to ports if empty
           playerControlPort.write(false);
         }
-
       }
 
     } else { // not hacking for a faction
@@ -249,17 +293,21 @@ function currentActionUseful(ns, player, currentWork, factions) {
     if (currentWork.type === "COMPANY") {
       var reputation = ns.singularity.getCompanyRep(currentWork.companyName)
       ns.print("Company reputation: " + ns.nFormat(reputation, "0a"));
-      if (factions.has(currentWork.companyName)) {
+      if (reputation > 3 * 10 ** 5 || factions.has(currentWork.companyName)) {
         return false;
+      } else {
+        applyForPromotion(ns, currentWork.companyName);
+        return true;
       }
-      applyForPromotion(ns, player, currentWork);
-      return true;
-    } else if (currentWork.type === "CRIME") {
+    }
+    if (currentWork.type === "CRIME") {
       for (let crime of crimes) {
         let crimeChance = ns.singularity.getCrimeChance(crime);
         if (
           (currentWork.crimeType == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
-          (currentWork.crimeType == "Homicide" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
+          (currentWork.crimeType == "MUG" && player.money < 9 * 10 ** 6) ||
+          (currentWork.crimeType == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
+          (currentWork.crimeType == "HOMICIDE" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
           (currentWork.crimeType == "KIDNAP" && crimeChance > 0.25) // best for intelligence and time to skills
         ) {
           return true;
@@ -284,13 +332,12 @@ function getFactionsForReputation(ns, player) {
   return factionsWithAugmentations;
 }
 
-function getCorpsForReputation(ns, factions) {
+function getCorpsForReputation(ns) {
   var corpsWithoutFaction = []
-  if (factions) {
-    for (const corp of megaCorps) {
-      if (!factions.has(corp) && maxAugmentRep(ns, corp) > 0) {
-        corpsWithoutFaction.push(corp);
-      }
+  let player = ns.getPlayer()
+  for (const corp of megaCorps) {
+    if (!player.factions.includes(corp) && maxAugmentRep(ns, corp) > 0) {
+      corpsWithoutFaction.push(corp);
     }
   }
   return corpsWithoutFaction;
@@ -387,7 +434,7 @@ function maxAugmentRep(ns, faction) {
         }
       }
       maxReputationRequired = Math.max(maxReputationRequired, ns.singularity.getAugmentationRepReq(augmentation));
-      let donateFavorLevel = ns.formulas.reputation.calculateFavorToRep(150)
+      let donateFavorLevel = ns.formulas.reputation.calculateFavorToRep(150 - ns.singularity.getFactionFavor(faction))
       if (maxReputationRequired > donateFavorLevel) {
         return donateFavorLevel
       }
@@ -411,6 +458,7 @@ function joinFactions(ns) {
 }
 
 function commitCrime(ns, player, isFocused) {
+  let currentWork = ns.singularity.getCurrentWork()
   // Calculate the risk value of all crimes
 
   var bestCrime = "Kidnap and Ransom";
@@ -419,19 +467,28 @@ function commitCrime(ns, player, isFocused) {
   for (let crime of crimes) {
     let crimeChance = ns.singularity.getCrimeChance(crime);
     var crimeStats = ns.singularity.getCrimeStats(crime);
-    if (crime == "Assassination" && player.numPeopleKilled < 30 && crimeChance > 0.98) {
-      bestCrime = "Assassination";
+    if (crime == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) {
+      bestCrime = "ASSASSINATION";
       bestCrimeStats = crimeStats;
       break;
-    } else if (crime == "Homicide" && player.numPeopleKilled < 30 && crimeChance > 0.98) {
-      bestCrime = "Homicide";
+    } else if (crime == "HOMICIDE" && player.numPeopleKilled < 30 && crimeChance > 0.98) {
+      bestCrime = "HOMICIDE";
       bestCrimeStats = crimeStats;
       break;
-    } else if (crime == "Kidnap and Ransom" && crimeChance > 0.25) {
-      bestCrime = "Kidnap and Ransom";
+    } else if (crime == "KIDNAP" && crimeChance > 0.5) {
+      bestCrime = "KIDNAP";
+      bestCrimeStats = crimeStats;
+      break;
+    } else if (crime == "MUG" && crimeChance > 0.5 && player.money < 9 * 10 ** 6) {
+      bestCrime = "MUG";
+      bestCrimeStats = crimeStats;
+      break;
+    } else if (crime == "ROBSTORE" && crimeChance > 0.5 && player.money < 9 * 10 ** 6) {
+      bestCrime = "ROBSTORE";
       bestCrimeStats = crimeStats;
       break;
     }
+
     // var crimeValue = 0;
     // if (player.strength < combatStatsGoal) {
     //   crimeValue += 100000 * crimeStats.strength_exp;
