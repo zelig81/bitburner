@@ -4,7 +4,7 @@
 // requires 4s Market Data TIX API Access
 
 // defines if stocks can be shorted (see BitNode 8)
-const shortAvailable = true;
+const shortAvailable = ns.args = 0 ? true : false;
 
 const commission = 100000;
 const FORECAST_THRESH_BUY = 0.57;

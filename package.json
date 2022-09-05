@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
+    "bitburner-sync": "^1.5.2",
     "ns2": "^1.0.3"
   }
 }

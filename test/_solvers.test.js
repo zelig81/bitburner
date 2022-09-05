@@ -6,6 +6,7 @@ import {
   factor,
   encryptionICaesarCipher,
   encryptionIIVigenereCipher,
+  totalWayToSumII,
 } from '../_solvers.js'
 
 describe('arrayJumpingGameII', () => {
@@ -74,5 +75,14 @@ describe('encryptionIIVigenereCipher', function () {
   });
   test('["DEBUGCACHEVIRUSTABLEEMAIL", "CLIPBOARD"] -> FPJJHQATKGGQGVGTRENPMBBWL', () => {
     expect(encryptionIIVigenereCipher(["DEBUGCACHEVIRUSTABLEEMAIL", "CLIPBOARD"])).toEqual("FPJJHQATKGGQGVGTRENPMBBWL");
+  });
+});
+
+describe('totalWayToSumII', function () {
+  // test('[2,3,4,6,8,9,11,12,13,15,18], 59 -> stam', () => {
+  //   expect(totalWayToSumII([2, 3, 4, 6, 8, 9, 11, 12, 13, 15, 18], 59)).toEqual("stam");
+  // });
+  test('[2,5,6,7,8,9,10,12], 83 -> stam', () => {
+    expect(totalWayToSumII([2, 5, 6, 7, 8, 9, 10, 12], 83)).toEqual("stam");
   });
 });

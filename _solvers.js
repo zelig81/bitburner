@@ -272,18 +272,365 @@ export const solverWaysToSum = (arrayData) => {
   return ways[arrayData];
 }
 
+export const solveComprLZEncode = (plain) => {
+  // for state[i][j]:
+  //      if i is 0, we're adding a literal of length j
+  //      else, we're adding a backreference of offset i and length j
+  let cur_state = Array.from(Array(10), () => Array(10).fill(null));
+  let new_state = Array.from(Array(10), () => Array(10));
+
+  function set(state, i, j, str) {
+    const current = state[i][j];
+    if (current == null || str.length < current.length) {
+      state[i][j] = str;
+    } else if (str.length === current.length && Math.random() < 0.5) {
+      // if two strings are the same length, pick randomly so that
+      // we generate more possible inputs to Compression II
+      state[i][j] = str;
+    }
+  }
+
+  // initial state is a literal of length 1
+  cur_state[0][1] = "";
+
+  for (let i = 1; i < plain.length; ++i) {
+    for (const row of new_state) {
+      row.fill(null);
+    }
+    const c = plain[i];
+
+    // handle literals
+    for (let length = 1; length <= 9; ++length) {
+      const string = cur_state[0][length];
+      if (string == null) {
+        continue;
+      }
+
+      if (length < 9) {
+        // extend current literal
+        set(new_state, 0, length + 1, string);
+      } else {
+        // start new literal
+        set(new_state, 0, 1, string + "9" + plain.substring(i - 9, i) + "0");
+      }
+
+      for (let offset = 1; offset <= Math.min(9, i); ++offset) {
+        if (plain[i - offset] === c) {
+          // start new backreference
+          set(new_state, offset, 1, string + String(length) + plain.substring(i - length, i));
+        }
+      }
+    }
+
+    // handle backreferences
+    for (let offset = 1; offset <= 9; ++offset) {
+      for (let length = 1; length <= 9; ++length) {
+        const string = cur_state[offset][length];
+        if (string == null) {
+          continue;
+        }
+
+        if (plain[i - offset] === c) {
+          if (length < 9) {
+            // extend current backreference
+            set(new_state, offset, length + 1, string);
+          } else {
+            // start new backreference
+            set(new_state, offset, 1, string + "9" + String(offset) + "0");
+          }
+        }
+
+        // start new literal
+        set(new_state, 0, 1, string + String(length) + String(offset));
+
+        // end current backreference and start new backreference
+        for (let new_offset = 1; new_offset <= Math.min(9, i); ++new_offset) {
+          if (plain[i - new_offset] === c) {
+            set(new_state, new_offset, 1, string + String(length) + String(offset) + "0");
+          }
+        }
+      }
+    }
+
+    const tmp_state = new_state;
+    new_state = cur_state;
+    cur_state = tmp_state;
+  }
+
+  let result = null;
+
+  for (let len = 1; len <= 9; ++len) {
+    let string = cur_state[0][len];
+    if (string == null) {
+      continue;
+    }
+
+    string += String(len) + plain.substring(plain.length - len, plain.length);
+    if (result == null || string.length < result.length) {
+      result = string;
+    } else if (string.length == result.length && Math.random() < 0.5) {
+      result = string;
+    }
+  }
+
+  for (let offset = 1; offset <= 9; ++offset) {
+    for (let len = 1; len <= 9; ++len) {
+      let string = cur_state[offset][len];
+      if (string == null) {
+        continue;
+      }
+
+      string += String(len) + "" + String(offset);
+      if (result == null || string.length < result.length) {
+        result = string;
+      } else if (string.length == result.length && Math.random() < 0.5) {
+        result = string;
+      }
+    }
+  }
+
+  return result ?? "";
+}
+
+export const solveColoringGraph = (data) => {
+  //Helper function to get neighbourhood of a vertex
+  function neighbourhood(vertex) {
+    const adjLeft = data[1].filter(([a, _]) => a == vertex).map(([_, b]) => b);
+    const adjRight = data[1].filter(([_, b]) => b == vertex).map(([a, _]) => a);
+    return adjLeft.concat(adjRight);
+  }
+
+  //Verify that there is no solution by attempting to create a proper 2-coloring.
+  const coloring = Array(data[0]).fill(undefined);
+  while (coloring.some((val) => val === undefined)) {
+    //Color a vertex in the graph
+    const initialVertex = coloring.findIndex((val) => val === undefined);
+    coloring[initialVertex] = 0;
+    const frontier = [initialVertex];
+
+    //Propogate the coloring throughout the component containing v greedily
+    while (frontier.length > 0) {
+      const v = frontier.pop() || 0;
+      const neighbors = neighbourhood(v);
+
+      //For each vertex u adjacent to v
+      for (const id in neighbors) {
+        const u = neighbors[id];
+
+        //Set the color of u to the opposite of v's color if it is new,
+        //then add u to the frontier to continue the algorithm.
+        if (coloring[u] === undefined) {
+          if (coloring[v] === 0) coloring[u] = 1;
+          else coloring[u] = 0;
+
+          frontier.push(u);
+        }
+
+        //Assert u,v do not have the same color
+        else if (coloring[u] === coloring[v]) {
+          //If u,v do have the same color, no proper 2-coloring exists, meaning
+          //the player was correct to say there is no proper 2-coloring of the graph.
+          return "[]";
+        }
+      }
+    }
+  }
+  return coloring;
+}
+
+export const solveShortestPathInAGrid = (data) => {
+  let H = data.length, W = data[0].length;
+  let dist = Array.from(Array(H), () => Array(W).fill(Number.POSITIVE_INFINITY));
+  dist[0][0] = 0;
+
+  let queue = [[0, 0]];
+  while (queue.length > 0) {
+    let [i, j] = queue.shift();
+    let d = dist[i][j];
+
+    if (i > 0 && d + 1 < dist[i - 1][j] && data[i - 1][j] !== 1) { dist[i - 1][j] = d + 1; queue.push([i - 1, j]); }
+    if (i < H - 1 && d + 1 < dist[i + 1][j] && data[i + 1][j] !== 1) { dist[i + 1][j] = d + 1; queue.push([i + 1, j]); }
+    if (j > 0 && d + 1 < dist[i][j - 1] && data[i][j - 1] !== 1) { dist[i][j - 1] = d + 1; queue.push([i, j - 1]); }
+    if (j < W - 1 && d + 1 < dist[i][j + 1] && data[i][j + 1] !== 1) { dist[i][j + 1] = d + 1; queue.push([i, j + 1]); }
+  }
+
+  let path = "";
+  if (Number.isFinite(dist[H - 1][W - 1])) {
+    let i = H - 1, j = W - 1;
+    while (i !== 0 || j !== 0) {
+      let d = dist[i][j];
+
+      let new_i = 0, new_j = 0, dir = "";
+      if (i > 0 && dist[i - 1][j] < d) { d = dist[i - 1][j]; new_i = i - 1; new_j = j; dir = "D"; }
+      if (i < H - 1 && dist[i + 1][j] < d) { d = dist[i + 1][j]; new_i = i + 1; new_j = j; dir = "U"; }
+      if (j > 0 && dist[i][j - 1] < d) { d = dist[i][j - 1]; new_i = i; new_j = j - 1; dir = "R"; }
+      if (j < W - 1 && dist[i][j + 1] < d) { d = dist[i][j + 1]; new_i = i; new_j = j + 1; dir = "L"; }
+
+      i = new_i; j = new_j;
+      path = dir + path;
+    }
+  }
+
+  return path;
+}
+
+export const solveWaysToSumII = (input) => {
+  /**
+   *
+   * @param {number} target
+   * @param {number[]} nums
+   * @returns
+   */
+  let n = input[0];
+  let nums = input[1];
+  let table = new Array(n + 1);
+  for (let i = 0; i < n + 1; i++) {
+    table[i] = 0;
+  }
+  table[0] = 1;
+
+  for (let i of nums) {
+    if (i > n) {
+      continue;
+    }
+    for (let j = i; j <= n; j++) {
+      table[j] += table[j - i];
+    }
+    console.log(table);
+  }
+  return table[n];
+}
+
+export function HammingSumOfParity(_lengthOfDBits) { // will calculate the needed amount of parityBits 'without' the "overall"-Parity
+  return (_lengthOfDBits < 3 || _lengthOfDBits == 0)
+    ? ((_lengthOfDBits == 0) ? 0 : _lengthOfDBits + 1)
+    // the Math.log2-math will only work, if the length is greater egqual 3 otherwise it's "kinda broken" :D
+    : ((Math.ceil(Math.log2(_lengthOfDBits * 2))) <= Math.ceil(Math.log2(1 + _lengthOfDBits + Math.ceil(Math.log2(_lengthOfDBits)))))
+      ? Math.ceil(Math.log2(_lengthOfDBits) + 1)
+      : Math.ceil(Math.log2(_lengthOfDBits))
+}
+
+export const solveHammingEncode = (value) => {
+  let _dataBits = value.toString(2); // change value into string of binary bits
+  let _sum_parity = HammingSumOfParity(_dataBits.length); // get the sum of needed parity bits
+  let _data = _dataBits.split(""); // create new array with the given data bits
+  let _build = []; // init new array for building
+  let count = (arr, val) => arr.reduce((a, v) => (v === val ? a + 1 : a), 0);
+  // count specified data in the array, for later use
+
+  _build.push("x", "x", ..._data.splice(0, 1)); // pre-build the "pre-build"
+
+  for (let i = 2; i < _sum_parity; i++) { // add new paritybits and the corresponding data bits
+    _build.push("x", ..._data.splice(0, Math.pow(2, i) - 1))
+  }
+  // "pre"-build my array, now the "calculation"... get the paritybits working
+  for (let index of _build.reduce(function (a, e, i) { if (e == "x") a.push(i); return a; }, [])) {
+    let _tempcount = index + 1; // set the "stepsize"
+    let _temparray = []; // temporary array to store the corresponding bits
+    let _tempdata = [..._build]; // copy the "build"
+    while (_tempdata[index] !== undefined) { // as long as there are bits, do "cut"
+      let _temp = _tempdata.splice(index, _tempcount * 2); // get x*2 bits, then
+      _temparray.push(..._temp.splice(0, _tempcount)); // .. cut them and keep first half
+    }
+    _temparray.splice(0, 1); // remove first bit, which is the parity one
+    _build[index] = ((count(_temparray, "1")) % 2.).toString() // simple count and remainder of 2 with "toString" to store it
+  }
+  _build.unshift(((count(_build, "1")) % 2.).toString()) // adding first index, which is done as last element
+  return _build.join("") // return a string again
+}
+
+export const solveHammingDecode = (_data) => {
+  let _build = _data.split(""); // ye, an array again
+  let _testArray = [];  //for the "tests". if any is false, it is been altered data, will check and fix it later
+  let _sum_parity = Math.ceil(Math.log2(_data.length)); // excluding first bit
+  let count = (arr, val) => arr.reduce((a, v) => (v === val ? a + 1 : a), 0); // count.... again ;)
+  let _overallParity = _build.splice(0, 1).join(""); // remove first index, for checking and to use the _build properly later
+  _testArray.push((_overallParity == (count(_build, "1") % 2).toString()) ? true : false); // checking the "overall" parity
+  for (var i = 0; i < _sum_parity; i++) {
+    let _tempIndex = Math.pow(2, i) - 1 // get the parityBits Index
+    let _tempStep = _tempIndex + 1 // set the stepsize
+    let _tempData = [..._build] // "copy" the build-data
+    let _tempArray = [] // init empty array for "testing"
+    while (_tempData[_tempIndex] != undefined) { // extract from the copied data until the "starting" index is undefined
+      var _temp = [..._tempData.splice(_tempIndex, _tempStep * 2)] // extract 2*stepsize
+      _tempArray.push(..._temp.splice(0, _tempStep))  // and cut again for keeping first half
+    }
+    let _tempParity = _tempArray.shift() // and cut the first index for checking with the rest of the data
+    _testArray.push(((_tempParity == (count(_tempArray, "1") % 2).toString())) ? true : false) // is the _tempParity the calculated data?
+  }
+  let _fixIndex = 0; // init the "fixing" index amd start with -1, bc we already removed the first bit
+  for (let i = 1; i < _sum_parity + 1; i++) {
+    _fixIndex += (_testArray[i]) ? 0 : (Math.pow(2, i) / 2)
+  }
+  _build.unshift(_overallParity)
+  // fix the actual hammingcode if there is an error
+  if (_fixIndex > 0 && _testArray[0] == false) {  // if the overall is false and the sum of calculated values is greater equal 0, fix the corresponding hamming-bit
+    _build[_fixIndex] = (_build[_fixIndex] == "0") ? "1" : "0"
+  }
+  else if (_testArray[0] == false) { // otherwise, if the the overall_parity is only wrong, fix that one
+    _overallParity = (_overallParity == "0") ? "1" : "0"
+  }
+  else if (_testArray[0] == true && _testArray.some((truth) => truth == false)) {
+    return 0 // uhm, there's some strange going on... 2 bits are altered? How?
+  }
+  // oof.. halfway through... we fixed the altered bit, now "extract" the parity from the build and parse the binary data
+  for (var i = _sum_parity; i >= 0; i--) { // start from the last parity down the starting one
+    _build.splice(Math.pow(2, i), 1)
+  }
+  _build.splice(0, 1)
+  return parseInt(_build.join(""), 2)
+}
+
 // Total Ways to Sum II
 
-export const totalWayToSumII = (data) => {
+export const totalWayToSumII = (data, sum) => {
   /*
   Total Ways to Sum II
   How many different distinct ways can the number 59 be written as a sum of integers contained in the set:
 
-  [2,3,4,6,8,9,11,12,13,15,18]?
+  [2,3,4,6,8,9,11,12,13,15,18]?59
   [2,4,5,6,8,9,12,15,20]?
+  [2,5,6,7,8,9,10,12]?83
 
   You may use each integer in the set zero or more times.
   */
+  let permutations = []
+  for (let i in data) {
+    let listOfEncounters = []
+    let maxCount = Math.floor(sum / data[i])
+    for (let j = 0; j <= maxCount; j++){
+      listOfEncounters.push(j) // list of max number of encounters of this number i.e. [[0,1,2,3],[0,1,2],[0,1,2,3,4,5]]
+    }
+    permutations[i] = listOfEncounters
+  }
+  console.log(`permutations: ${JSON.stringify(permutations)}`)
+  // result is list of exact count of encounters of this number [[0,1,4],....]
+  let results = recursiveTotalWayToSumII([], permutations, data, sum)
+  return results.length
+}
+
+const recursiveTotalWayToSumII = (results, permutations, data, sum) => {
+  let newResults = []
+  let currentResult = []
+  let newPermutations = []
+  let currentSum = 0
+  for (let i in data) {
+    if (permutations[i].length === 1) {
+      currentSum += permutations[i][0]
+      currentResult.push(permutations[i][0])
+      continue
+    } else {
+      for (let j = 0; j <= permutations[i].length; j++){
+        newPermutations[i] = [permutations[i][j]]
+        let tmpResults = recursiveTotalWayToSumII(results, newPermutations, data, sum)
+        newResults = [...newResults, ...tmpResults]
+      }
+      return [...results, ...newResults]
+    }
+  }
+  if (currentSum === sum) {
+    return [...results, currentResult]
+  }
 }
 
 // Subarray with Maximum Sum

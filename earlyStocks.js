@@ -6,7 +6,7 @@ const shortAvailable = true;
 
 const commission = 100000;
 const samplingLength = 30;
-const moneyRatioAPIPurchase = 2
+const moneyRatioAPIPurchase = 1.2
 
 function predictState(samples) {
   const limits = [null, null, null, null, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20];
@@ -58,7 +58,7 @@ export async function main(ns) {
   ns.tail()
 
   if (!ns.stock.purchaseWseAccount() || !ns.stock.purchaseTixApi()) {
-    while (ns.getServerMoneyAvailable('home') < 5200 * 1000 * 1000 * moneyRatioAPIPurchase) {
+    while (ns.getServerMoneyAvailable('home') < 52 * 10 ** 8 * moneyRatioAPIPurchase) {
       await ns.sleep(60000)
     }
     ns.stock.purchaseWseAccount()
@@ -75,13 +75,18 @@ export async function main(ns) {
   while (true) {
     await ns.sleep(2000);
 
-    if (ns.getServerMoneyAvailable('home') > 26 * 1000 * 1000 * 1000 * moneyRatioAPIPurchase) {
+    if (
+      ns.getServerMoneyAvailable('home') > (
+        25 * ns.getBitNodeMultipliers().FourSigmaMarketDataApiCost +
+        1 * ns.getBitNodeMultipliers().FourSigmaMarketDataCost
+      ) * 10 ** 9 * moneyRatioAPIPurchase
+    ) {
       ns.stock.purchase4SMarketData()
       ns.stock.purchase4SMarketDataTixApi()
       if (shortAvailable) {
         ns.exec("stockShorts.js", "home")
       } else {
-        ns.exec("stocks.js", "home")
+        ns.exec("stockShorts.js", "home", 1, [false])
       }
       return
     }

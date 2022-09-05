@@ -4,7 +4,6 @@ import {
   compressionIRLE,
   factor,
   generateIps,
-  hammingCodesIntegerToBinary,
   maxProfit,
   mergeOverlap,
   removeInvalidParenthesis,
@@ -18,6 +17,12 @@ import {
   uniquePathsII,
   encryptionICaesarCipher,
   encryptionIIVigenereCipher,
+  solveWaysToSumII,
+  solveHammingEncode,
+  solveHammingDecode,
+  solveShortestPathInAGrid,
+  solveColoringGraph,
+  solveComprLZEncode,
 } from './_solvers.js'
 
 export async function main(ns) {
@@ -120,7 +125,7 @@ function solve(type, data, server, contract, ns, returnReward) {
       solution = solverWaysToSum(data);
       break;
     case "Total Ways to Sum II":
-      solution = "";
+      solution = solveWaysToSumII(data);
       break;
     case "Sanitize Parentheses in Expression":
       solution = removeInvalidParenthesis(data);
@@ -132,13 +137,13 @@ function solve(type, data, server, contract, ns, returnReward) {
       solution = compressionIILZ(data);
       break;
     case "Compression III: LZ Compression":
-      solution = "" //compressionIIILZ(data);
+      solution = solveComprLZEncode(data)
       break;
     case "HammingCodes: Integer to Encoded Binary":
-      solution = "";
+      solution = solveHammingEncode(data);
       break;
     case "HammingCodes: Encoded Binary to Integer":
-      solution = "";
+      solution = solveHammingDecode(data);
       break;
     case "Encryption I: Caesar Cipher":
       solution = encryptionICaesarCipher(data);
@@ -147,10 +152,10 @@ function solve(type, data, server, contract, ns, returnReward) {
       solution = encryptionIIVigenereCipher(data);
       break;
     case "Shortest Path in a Grid":
-      solution = ""; //shortestPathInAGrid(data)
+      solution = solveShortestPathInAGrid(data)
       break;
     case "Proper 2-Coloring of a Graph":
-      solution = "";
+      solution = solveColoringGraph(data);
       break;
     default:
       return false;

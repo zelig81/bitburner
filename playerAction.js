@@ -20,15 +20,15 @@ const isHomeComputerUpgradeEnabled = true
 
 const megaCorps = [
   "ECorp", // mostly hacking
+  "Fulcrum Secret Technologies", // hack + combat
   "Blade Industries", // hack+combat
   "NWO", // combat + hack + all skills unique + strength unique
-  "Fulcrum Secret Technologies", // hack + combat
-  "OmniTek Incorporated", // combat + reputation + charisma + hack unique
   "Clarke Incorporated", // reputation + charisma + all skills unique + hack unique
-  "MegaCorp", // combat unique
   "Four Sigma", // reputation
   "KuaiGong International", // combat + str/agi/def unique
+  "OmniTek Incorporated", // combat + reputation + charisma + hack unique
   "Bachman & Associates", // reputation + charisma
+  "MegaCorp", // combat unique
 ];
 
 const cityFactions = ["Sector-12", "Chongqing", "New Tokyo", "Ishima", "Aevum", "Volhaven"];
@@ -73,19 +73,19 @@ export async function main(ns) {
 
     joinFactions(ns);
 
-    buyAugments(ns, player);
+    buyAugments(ns);
 
-    upgradeHomeServer(ns, player);
+    upgradeHomeServer(ns);
 
-    var factionsForReputation = getFactionsForReputation(ns, player);
+    var factionsForReputation = getFactionsForReputation(ns);
     ns.print("Factions for Reputation: " + [...factionsForReputation.keys()]);
     ns.print("Corps to work for reputation: " + getCorpsForReputation(ns))
 
-    var actionUseful = currentActionUseful(ns, player, factionsForReputation);
+    var actionUseful = currentActionUseful(ns, factionsForReputation);
     ns.print("Current action useful: " + actionUseful);
 
     if (!actionUseful) {
-      sleepTime = chooseAction(ns, sleepTime, player, factionsForReputation);
+      sleepTime = chooseAction(ns, sleepTime, factionsForReputation);
     }
 
     if (currentWork) {
@@ -103,19 +103,21 @@ export async function main(ns) {
 
     ns.print("Karma: " + ns.heart.break());
     ns.print("Kills: " + player.numPeopleKilled);
+    ns.print(`HackNet: hashes / capacity: ${ ns.nFormat(ns.hacknet.numHashes(), "0.0a") } / ${ ns.nFormat(ns.hacknet.hashCapacity(), "0.0a") }`)
     //ns.print("sleep for " + sleepTime + " ms")
     await ns.sleep(sleepTime);
   }
 }
 
-function upgradeHomeServer(ns, player) {
-  //if (!player.has4SDataTixApi && player.money > 30e9) {
+function upgradeHomeServer(ns) {
+  var player = ns.getPlayer();
+  //if (!ns.stock.has4SDataTIXAPI() && player.money > 30e9) {
   // TODO: Consider moving this to the trading script, fits better there (and saves ram here)
   // ns.purchase4SMarketDataTixApi();
   //}
   if (player.money > ns.singularity.getUpgradeHomeRamCost() * moneyThreshold && isHomeComputerUpgradeEnabled) {
     if (!player.factions.includes("CyberSec") || ns.singularity.getUpgradeHomeRamCost() < 2e9
-      || (player.has4SDataTixApi && ns.singularity.getUpgradeHomeRamCost() < 0.2 * player.money)) {
+      || (ns.stock.has4SDataTIXAPI() && ns.singularity.getUpgradeHomeRamCost() < 0.2 * player.money)) {
       // Upgrade slowly in the first run while we save money for 4S or the first batch of augmentations
       // Assumption: We wont't join Cybersec after the first run anymore
       // ToDo: Beautification: At Max Home Server Ram, it still tries to upgrade RAM -> prevent that
@@ -158,15 +160,16 @@ function getPrograms(ns) {
   getSingleProgram(ns, "relaySMTP.exe", 5 * 10 ** 5)
 
   player = ns.getPlayer()
-  if (player.has4SDataTixApi && player.money > 280 * 10 ** 6 * moneyThreshold) {
+  if (ns.stock.has4SDataTIXAPI() && player.money > 280 * 10 ** 6 * moneyThreshold) {
     // do not buy more before 4s data access bought
     ns.singularity.purchaseProgram("HTTPWorm.exe");
     ns.singularity.purchaseProgram("SQLInject.exe");
   }
 }
 
-function chooseAction(ns, sleepTime, player, factions) {
+function chooseAction(ns, sleepTime, factions) {
   let focus = ns.singularity.isFocused();
+  var player = ns.getPlayer();
   let currentWork = ns.singularity.getCurrentWork()
 
   //ns.print("Focus: " + focus);
@@ -206,7 +209,7 @@ function chooseAction(ns, sleepTime, player, factions) {
     ns.toast("Start working for " + corpsToWorkFor[0]);
   } else {
     ns.toast("Crime Time!");
-    var crimeTime = commitCrime(ns, player, ns.singularity.isFocused());
+    var crimeTime = commitCrime(ns);
   }
   return sleepTime;
 }
@@ -228,8 +231,9 @@ function applyForPromotion(ns, corpToWorkFor) {
 
 }
 
-function currentActionUseful(ns, player, factions) {
+function currentActionUseful(ns, factions) {
   let currentWork = ns.singularity.getCurrentWork()
+  var player = ns.getPlayer();
   var playerControlPort = ns.getPortHandle(3); // port 2 is hack
   if (currentWork) {
     if (currentWork.type == "CLASS") {
@@ -262,14 +266,11 @@ function currentActionUseful(ns, player, factions) {
 
           let reputationTimeRemaining = repRemaining / reputationGain;
           let humanReadableReputationTimeRemaining = ""
-          if (reputationTimeRemaining < 60) {
-            humanReadableReputationTimeRemaining = ns.nFormat(reputationTimeRemaining, "0a") + " sec"
-          } else if (reputationTimeRemaining < 3600) {
-            humanReadableReputationTimeRemaining = ns.nFormat(reputationTimeRemaining / 60, "0.0a") + " min"
-          } else {
-            humanReadableReputationTimeRemaining = ns.nFormat(reputationTimeRemaining / 3600, "0.0a") + " hour(s)"
-          }
-          ns.print("Reputation remaining: " + ns.nFormat(repRemaining, "0.0a") + " in " + humanReadableReputationTimeRemaining);
+          let hours = Math.floor(reputationTimeRemaining / 3600)
+          let minutes = Math.floor((reputationTimeRemaining - hours * 3600) / 60)
+          let seconds = Math.floor(reputationTimeRemaining - hours * 3600 - 60 * minutes)
+
+          ns.print(`Reputation remaining: ${ns.nFormat(repRemaining, "0.0a")} in ${hours} hours ${minutes} minutes ${seconds} seconds`);
           return true;
         } else {
           ns.print("Max Reputation @ " + currentWork.factionName);
@@ -319,8 +320,8 @@ function currentActionUseful(ns, player, factions) {
   return false;
 }
 
-function getFactionsForReputation(ns, player) {
-
+function getFactionsForReputation(ns) {
+  var player = ns.getPlayer();
   var factionsWithAugmentations = new Map();
   for (const faction of player.factions) {
     var maxReputationRequired = maxAugmentRep(ns, faction);
@@ -343,8 +344,9 @@ function getCorpsForReputation(ns) {
   return corpsWithoutFaction;
 }
 
-function buyAugments(ns, player) {
+function buyAugments(ns) {
   // todo: refactor for better understanding
+  var player = ns.getPlayer();
   var sortedAugmentations = [];
 
   for (const faction of player.factions) {
@@ -450,15 +452,17 @@ function maxAugmentRep(ns, faction) {
 function joinFactions(ns) {
   const newFactions = ns.singularity.checkFactionInvitations();
   for (const faction of newFactions) {
-    if (!cityFactions.includes(faction) && maxAugmentRep(ns, faction)) {
+    if (!cityFactions.includes(faction)) {
       ns.singularity.joinFaction(faction);
       ns.print("Joined " + faction);
     }
   }
 }
 
-function commitCrime(ns, player, isFocused) {
+function commitCrime(ns) {
   let currentWork = ns.singularity.getCurrentWork()
+  let focus = ns.singularity.isFocused();
+  let player = ns.getPlayer()
   // Calculate the risk value of all crimes
 
   var bestCrime = "Kidnap and Ransom";
@@ -512,7 +516,9 @@ function commitCrime(ns, player, isFocused) {
     // }
   }
 
-  ns.singularity.commitCrime(bestCrime, isFocused);
+  if (currentWork == null || currentWork.crimeType !== bestCrime) {
+    ns.singularity.commitCrime(bestCrime, focus);
+  }
 
   ns.print("Crime value " + ns.nFormat(bestCrimeValue, "0a") + " for " + bestCrime);
   return bestCrimeStats.time + 10;

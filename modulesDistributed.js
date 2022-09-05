@@ -2,6 +2,9 @@
 
 // Detailed explanation at the end of the file.
 
+const enabledNetManager = true
+const singularityFunctionsAvailable = true;
+
 // hack severs for this much of their money
 // the money ratio is increased and decreased automatically, starting with this value initially
 var hackMoneyRatio = 0.1;
@@ -41,7 +44,6 @@ const shareScriptRam = 4;
 const files = [weakenScriptName, growScriptName, hackScriptName];
 
 // Backdoor script hooked in (requires singluarity functions SF4.1)
-const singularityFunctionsAvailable = true;
 const backdoorScript = "_backdoor.js"
 const backdoorScriptRam = 5.8;
 
@@ -101,6 +103,9 @@ export async function main(ns) {
   var shareThreadIndex = 0;
 
   while (true) {
+    if (enabledNetManager) { await hnManager(ns) }
+
+
     // scan and nuke all accesible servers
     servers = await scanAndNuke(ns);
     // ns.print(`servers:${[...servers.values()]}`)
@@ -181,10 +186,10 @@ export async function main(ns) {
     const homeMaxRam = ns.getServerMaxRam("home");
     const homeUsedRam = ns.getServerUsedRam("home")
     const homeFreeRam = homeMaxRam - homeUsedRam;
-    // if (homeFreeRam > solveContractsScriptRam) {
-    //     //ns.print("INFO checking for contracts to solve");
-    //     ns.exec(solveContractsScript, "home");
-    // }
+    if (homeFreeRam > solveContractsScriptRam && hackMoneyRatio >= 0.07) {
+        ns.print("INFO checking for contracts to solve");
+        ns.exec(solveContractsScript, "home");
+    }
 
     if (moneyXpShare && hackMoneyRatio >= 0.99) {
       const maxRam = ns.getServerMaxRam("home");
@@ -767,7 +772,33 @@ export function getStockPortContent(ns, portNumber, content) {
   return content;
 }
 
+async function hnManager(ns) {
+  let numHashes = ns.hacknet.numHashes()
+  let hashCapacity = ns.hacknet.hashCapacity()
+  if (numHashes > 4 && numHashes > hashCapacity * 0.9) {
+    if (numHashes - 0.95 * hashCapacity < 200) {
+      ns.hacknet.spendHashes("Sell for Money")
+      ns.print("HackNet spend hashes for money")
+    } else {
+      ns.hacknet.spendHashes("Generate Coding Contract")
+      ns.print("HackNet spend hashes for Coding Contracts")
+    }
+  }
+  if (checkMoney(ns, ns.hacknet.getPurchaseNodeCost(), 1000)) {
+    ns.hacknet.purchaseNode()
+    ns.print(`HackNet purchase new node`)
+  }
+  for (let i = 0; i < ns.hacknet.numNodes(); i++) {
+    for (let part of ['Level', 'Ram', 'Core', 'Cache']) {
+      if (checkMoney(ns, ns.hacknet['get' + part + 'UpgradeCost'](i), 1000)) {
+        ns.hacknet['upgrade' + part](i);
+        ns.print(`HackNet upgrade: ${part} for node #${i}`)
+      }
+    }
+  }
+}
 
+const checkMoney = (ns, moneyToSpend, ratioToSpend) => eval(moneyToSpend < ns.getPlayer().money / ratioToSpend)
 /*
 Design goals
 
