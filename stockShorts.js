@@ -3,9 +3,6 @@
 
 // requires 4s Market Data TIX API Access
 
-// defines if stocks can be shorted (see BitNode 8)
-const shortAvailable = ns.args = 0 ? true : false;
-
 const commission = 100000;
 const FORECAST_THRESH_BUY = 0.57;
 const FORECAST_THRESH_SELL = 0.47;
@@ -88,6 +85,9 @@ function tendStocks(ns) {
       shortStocks.add(stock.sym);
     }
   }
+
+  // defines if stocks can be shorted (see BitNode 8)
+  const shortAvailable = ns.args.length === 0 ? true : false;
 
   for (const stock of stocks) {
     var money = ns.getServerMoneyAvailable("home") - MONEY_THRESH;

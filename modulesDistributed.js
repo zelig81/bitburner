@@ -1,9 +1,12 @@
 // file: distributed-hack.js
-
+//todo: use hacknet nodes for ram only on > 1/16 of home ram
+//todo: make hacknet upgrades ratio 10 when > 2t money
 // Detailed explanation at the end of the file.
 
 const enabledNetManager = true
 const singularityFunctionsAvailable = true;
+const areHacknetServersAccessible = true
+const maxHacknetSpend = 2 * 10 ** 12
 
 // hack severs for this much of their money
 // the money ratio is increased and decreased automatically, starting with this value initially
@@ -76,6 +79,8 @@ export async function main(ns) {
   var freeRams;
   var ramUsage;
 
+  let cycleNumber = 0
+
   // initially set hackMoneyRatio based on progress measured by home server RAM
   var homeRam = ns.getServerMaxRam("home");
   if (homeRam >= 65536) {
@@ -103,8 +108,9 @@ export async function main(ns) {
   var shareThreadIndex = 0;
 
   while (true) {
-    if (enabledNetManager) { await hnManager(ns) }
 
+    cycleNumber++
+    if (enabledNetManager) { await hnManager(ns) }
 
     // scan and nuke all accesible servers
     servers = await scanAndNuke(ns);
@@ -170,7 +176,7 @@ export async function main(ns) {
         if (hackMoneyRatio > 0.99) {
           hackMoneyRatio = 0.99;
         }
-        ns.print("INFO increase hack money ratio to: " + hackMoneyRatio.toFixed(2));
+        ns.print(`INFO increase hack money ratio to: ${ hackMoneyRatio.toFixed(2) } on ${ servers.size } servers. ratioToSpend: ${ getHacknetRatioToSpend(ns) }`);
       }
       else if (partialAttacks > 4 && ramUsage > 0.9 && hackMoneyRatio > 0.01) {
         hackMoneyRatio -= hackMoneyRatio / 10;
@@ -178,7 +184,7 @@ export async function main(ns) {
           hackMoneyRatio = 0.01;
         }
         partialAttacks = 3;
-        ns.print("INFO decrease hack money ratio to: " + hackMoneyRatio.toFixed(2));
+        ns.print(`INFO decrease hack money ratio to: ${ hackMoneyRatio.toFixed(2) } on ${ servers.size } servers. ratioToSpend: ${ getHacknetRatioToSpend(ns) }`);
       }
     }
 
@@ -186,12 +192,12 @@ export async function main(ns) {
     const homeMaxRam = ns.getServerMaxRam("home");
     const homeUsedRam = ns.getServerUsedRam("home")
     const homeFreeRam = homeMaxRam - homeUsedRam;
-    if (homeFreeRam > solveContractsScriptRam && hackMoneyRatio >= 0.07) {
-        ns.print("INFO checking for contracts to solve");
-        ns.exec(solveContractsScript, "home");
+    if (homeFreeRam > solveContractsScriptRam && hackMoneyRatio >= 0.07 && cycleNumber % 10 === 0) {
+      ns.print("INFO checking for contracts to solve");
+      ns.exec(solveContractsScript, "home");
     }
 
-    if (moneyXpShare && hackMoneyRatio >= 0.99) {
+    if (moneyXpShare && hackMoneyRatio >= 0.5 /*0.99*/) {
       const maxRam = ns.getServerMaxRam("home");
       const usedRam = ns.getServerUsedRam("home")
       var freeRam = maxRam - usedRam;
@@ -708,7 +714,17 @@ async function scanAndNuke(ns) {
   scanAll(ns, "home", servers);
   var accessibleServers = new Set();
   for (let server of servers) {
-    if (server.startsWith("hacknet-node")) { continue; } // for BitNode 9 to permit hacking on the Hacknet Servers
+    if (server.startsWith("hacknet-node")) {
+      if (
+        getHacknetRatioToSpend(ns) > 100 &&
+        areHacknetServersAccessible &&
+        ns.getServerMaxRam(server) > ns.getServerMaxRam("home") / 16
+      ) { // add hacknet servers only when there are much money and most chances hacking on servers will be more productive
+        accessibleServers.add(server)
+      } else {
+        continue;
+      }
+    } // for BitNode 9 to permit hacking on the Hacknet Servers
     if (await ns.hasRootAccess(server)) {
       accessibleServers.add(server)
     } else {
@@ -775,30 +791,62 @@ export function getStockPortContent(ns, portNumber, content) {
 async function hnManager(ns) {
   let numHashes = ns.hacknet.numHashes()
   let hashCapacity = ns.hacknet.hashCapacity()
-  if (numHashes > 4 && numHashes > hashCapacity * 0.9) {
-    if (numHashes - 0.95 * hashCapacity < 200) {
-      ns.hacknet.spendHashes("Sell for Money")
-      ns.print("HackNet spend hashes for money")
-    } else {
-      ns.hacknet.spendHashes("Generate Coding Contract")
-      ns.print("HackNet spend hashes for Coding Contracts")
+  let timesToSellForMoney = Math.floor(numHashes / 4)
+  let currentMoney = ns.getPlayer().money
+  if (
+    (numHashes > 4 && numHashes > hashCapacity * 0.95) ||
+    (!ns.stock.has4SDataTIXAPI() && timesToSellForMoney > 100) ||
+    // currentMoney > maxHacknetSpend * 10 ||
+    currentMoney < 10 ** 8
+  ) {
+    if (
+      (!ns.stock.has4SDataTIXAPI() && timesToSellForMoney > 100) ||
+      (currentMoney < 10 ** 8 && currentMoney > 0 && timesToSellForMoney > 1)
+    ) {
+      ns.hacknet.spendHashes("Sell for Money", "", timesToSellForMoney)
+      ns.print(`HackNet spend hashes for money x${ timesToSellForMoney } times`)
+    } else if (numHashes - 0.95 * hashCapacity < 200 && numHashes - 0.95 * hashCapacity > 4) {
+      timesToSellForMoney = Math.floor((numHashes - 0.95 * hashCapacity) / 4)
+      ns.hacknet.spendHashes("Sell for Money", "", timesToSellForMoney)
+      ns.print(`HackNet spend hashes for money near cap x${ timesToSellForMoney } times`)
     }
   }
-  if (checkMoney(ns, ns.hacknet.getPurchaseNodeCost(), 1000)) {
+
+  let ratioToSpend = getHacknetRatioToSpend(ns)
+
+  if (checkMoney(ns, ns.hacknet.getPurchaseNodeCost(), ratioToSpend > 1 ? 5 : ratioToSpend)) {
     ns.hacknet.purchaseNode()
-    ns.print(`HackNet purchase new node`)
+    ns.print(`HackNet purchase new node. Ratio: ${ ratioToSpend }`)
   }
   for (let i = 0; i < ns.hacknet.numNodes(); i++) {
     for (let part of ['Level', 'Ram', 'Core', 'Cache']) {
-      if (checkMoney(ns, ns.hacknet['get' + part + 'UpgradeCost'](i), 1000)) {
+      let boundary = part === 'Level' ? maxHacknetSpend / 10 : maxHacknetSpend
+      if (checkMoney(ns, ns.hacknet['get' + part + 'UpgradeCost'](i), ratioToSpend, boundary)) {
         ns.hacknet['upgrade' + part](i);
-        ns.print(`HackNet upgrade: ${part} for node #${i}`)
+        ns.print(`HackNet upgrade: ${ part } for node #${ i }. Ratio: ${ ratioToSpend }`)
       }
     }
   }
 }
 
-const checkMoney = (ns, moneyToSpend, ratioToSpend) => eval(moneyToSpend < ns.getPlayer().money / ratioToSpend)
+const checkMoney = (ns, moneyToSpend, ratioToSpend, boundary = maxHacknetSpend) => eval(moneyToSpend < ns.getPlayer().money / ratioToSpend && moneyToSpend < boundary)
+
+const getHacknetRatioToSpend = (ns) => {
+  let ratioToSpend = 10000
+  let currentMoney = ns.getPlayer().money
+  if (currentMoney < 10 ** 6) {
+    ratioToSpend = 1
+  } else if (currentMoney < 10 ** 8) {
+    ratioToSpend = 5
+  } else if (currentMoney < 10 ** 9) {
+    ratioToSpend = 100
+  } else if (currentMoney < maxHacknetSpend) {
+    ratioToSpend = 1000
+  } else {
+    ratioToSpend = 10
+  }
+  return ratioToSpend
+}
 /*
 Design goals
 

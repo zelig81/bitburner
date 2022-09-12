@@ -103,7 +103,7 @@ export async function main(ns) {
 
     ns.print("Karma: " + ns.heart.break());
     ns.print("Kills: " + player.numPeopleKilled);
-    ns.print(`HackNet: hashes / capacity: ${ ns.nFormat(ns.hacknet.numHashes(), "0.0a") } / ${ ns.nFormat(ns.hacknet.hashCapacity(), "0.0a") }`)
+    ns.print(`HackNet: hashes / capacity: ${ ns.nFormat(ns.hacknet.numHashes(), "0.000a") } / ${ ns.nFormat(ns.hacknet.hashCapacity(), "0.000a") }`)
     //ns.print("sleep for " + sleepTime + " ms")
     await ns.sleep(sleepTime);
   }
@@ -264,8 +264,7 @@ function currentActionUseful(ns, factions) {
           let appliedFocusBonus = ns.singularity.isFocused() ? 1 : focusBonus
           let reputationGain = (1 + (1 * Math.pow(player.skills.intelligence, 0.8)) / 600) * factionRepGain.reputation * factionRepGain.hackExp * appliedFocusBonus
 
-          let reputationTimeRemaining = repRemaining / reputationGain;
-          let humanReadableReputationTimeRemaining = ""
+          let reputationTimeRemaining = repRemaining / reputationGain * 6;
           let hours = Math.floor(reputationTimeRemaining / 3600)
           let minutes = Math.floor((reputationTimeRemaining - hours * 3600) / 60)
           let seconds = Math.floor(reputationTimeRemaining - hours * 3600 - 60 * minutes)
@@ -294,7 +293,7 @@ function currentActionUseful(ns, factions) {
     if (currentWork.type === "COMPANY") {
       var reputation = ns.singularity.getCompanyRep(currentWork.companyName)
       ns.print("Company reputation: " + ns.nFormat(reputation, "0a"));
-      if (reputation > 3 * 10 ** 5 || factions.has(currentWork.companyName)) {
+      if (reputation > 4 * 10 ** 5 || factions.has(currentWork.companyName)) {
         return false;
       } else {
         applyForPromotion(ns, currentWork.companyName);
@@ -424,6 +423,8 @@ function maxAugmentRep(ns, faction) {
   var augmentations = ns.singularity.getAugmentationsFromFaction(faction);
   var newAugmentations = augmentations.filter(val => !purchasedAugmentations.includes(val));
 
+  let output = 0
+
   if (newAugmentations.length > 0) {
     // go for the last augmentation in the list. Assumption: Higher rep augs from follow-up factions
     var maxReputationRequired = 0;
@@ -437,11 +438,19 @@ function maxAugmentRep(ns, faction) {
       }
       maxReputationRequired = Math.max(maxReputationRequired, ns.singularity.getAugmentationRepReq(augmentation));
       let donateFavorLevel = ns.formulas.reputation.calculateFavorToRep(150 - ns.singularity.getFactionFavor(faction))
-      if (maxReputationRequired > donateFavorLevel) {
-        return donateFavorLevel
+      if (maxReputationRequired <= 5 * 10 ** 5 && output < maxReputationRequired) {
+        output = maxReputationRequired
+        continue
+      }
+      if (
+        maxReputationRequired > donateFavorLevel &&
+        donateFavorLevel > 0 &&
+        donateFavorLevel < maxReputationRequired
+      ) {
+        output = donateFavorLevel
       }
     }
-    return maxReputationRequired;
+    return output;
     // go for the last augmentation in the list. Assumption: Higher rep augs from follow-up factions
     // some augs will be completely ignored however
     //return ns.singularity.getAugmentationRepReq(newAugmentations[newAugmentations.length - 1]);
@@ -449,10 +458,21 @@ function maxAugmentRep(ns, faction) {
   return 0;
 }
 
+function hasAllAugmentations(ns, faction) {
+  let listFactionAugmentations = ns.singularity.getAugmentationsFromFaction(faction)
+  let listOwnedAugmentations = ns.singularity.getOwnedAugmentations(true)
+  for (let augmentation of listFactionAugmentations) {
+    if (!listOwnedAugmentations.includes(augmentation)) {
+      return false
+    }
+  }
+  return true
+}
+
 function joinFactions(ns) {
   const newFactions = ns.singularity.checkFactionInvitations();
   for (const faction of newFactions) {
-    if (!cityFactions.includes(faction)) {
+    if (!cityFactions.includes(faction) || ! hasAllAugmentations(ns, faction)) {
       ns.singularity.joinFaction(faction);
       ns.print("Joined " + faction);
     }
@@ -493,27 +513,28 @@ function commitCrime(ns) {
       break;
     }
 
-    // var crimeValue = 0;
-    // if (player.strength < combatStatsGoal) {
-    //   crimeValue += 100000 * crimeStats.strength_exp;
-    // }
-    // if (player.defense < combatStatsGoal) {
-    //   crimeValue += 100000 * crimeStats.defense_exp;
-    // }
-    // if (player.dexterity < combatStatsGoal) {
-    //   crimeValue += 100000 * crimeStats.dexterity_exp;
-    // }
-    // if (player.agility < combatStatsGoal) {
-    //   crimeValue += 100000 * crimeStats.agility_exp;
-    // }
-    // // crimeValue += crimeStats.money;
-    // //ns.print(ns.nFormat(crimeChance,"0.00a")+"/"+ns.nFormat(crimeStats.time,"000a")+"|"+crimeStats.strength_exp + "|" + crimeStats.defense_exp + "|" + crimeStats.dexterity_exp + "|" + crimeStats.agility_exp + "|" + ns.nFormat(crimeStats.money,"0a")+"|"+crime);
-    // crimeValue = crimeValue * crimeChance / (crimeStats.time + 10);
-    // if (crimeValue > bestCrimeValue) {
-    //   bestCrime = crime;
-    //   bestCrimeValue = crimeValue;
-    //   bestCrimeStats = crimeStats;
-    // }
+    var crimeValue = 0;
+    let combatStatsGoal = 200
+    if (player.strength < combatStatsGoal) {
+      crimeValue += 100000 * crimeStats.strength_exp;
+    }
+    if (player.defense < combatStatsGoal) {
+      crimeValue += 100000 * crimeStats.defense_exp;
+    }
+    if (player.dexterity < combatStatsGoal) {
+      crimeValue += 100000 * crimeStats.dexterity_exp;
+    }
+    if (player.agility < combatStatsGoal) {
+      crimeValue += 100000 * crimeStats.agility_exp;
+    }
+    // crimeValue += crimeStats.money;
+    //ns.print(ns.nFormat(crimeChance,"0.00a")+"/"+ns.nFormat(crimeStats.time,"000a")+"|"+crimeStats.strength_exp + "|" + crimeStats.defense_exp + "|" + crimeStats.dexterity_exp + "|" + crimeStats.agility_exp + "|" + ns.nFormat(crimeStats.money,"0a")+"|"+crime);
+    crimeValue = crimeValue * crimeChance / (crimeStats.time + 10);
+    if (crimeValue > bestCrimeValue) {
+      bestCrime = crime;
+      bestCrimeValue = crimeValue;
+      bestCrimeStats = crimeStats;
+    }
   }
 
   if (currentWork == null || currentWork.crimeType !== bestCrime) {

@@ -23,6 +23,7 @@ import {
   solveShortestPathInAGrid,
   solveColoringGraph,
   solveComprLZEncode,
+  solveComprLZDecode,
 } from './_solvers.js'
 
 export async function main(ns) {
@@ -134,7 +135,7 @@ function solve(type, data, server, contract, ns, returnReward) {
       solution = compressionIRLE(data);
       break;
     case "Compression II: LZ Decompression":
-      solution = compressionIILZ(data);
+      solution = solveComprLZDecode(data) //compressionIILZ(data);
       break;
     case "Compression III: LZ Compression":
       solution = solveComprLZEncode(data)
