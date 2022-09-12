@@ -9,7 +9,6 @@ const FORECAST_THRESH_SELL = 0.47;
 const PROFIT_THRESH_SELL = - 0.015;
 const PROFIT_THRESH_SELL_MAX = - 0.03;
 const MONEY_THRESH = 10 * 1000000
-const BUY_AFTER_SOLD_CALMDOWN_CYCLES = 6
 
 export async function main(ns) {
   ns.disableLog("ALL");
@@ -29,7 +28,6 @@ function tendStocks(ns) {
 
   var longStocks = new Set();
   var shortStocks = new Set();
-  let sellWaitingCalmdown = new Map()
   var overallValue = 0;
 
   for (const stock of stocks) {
@@ -43,7 +41,6 @@ function tendStocks(ns) {
       ) {
         // sell due to possibility to loss profits
         const salePrice = ns.stock.sellStock(stock.sym, stock.longShares);
-        sellWaitingCalmdown.set(stock.sym + "_long", BUY_AFTER_SOLD_CALMDOWN_CYCLES)
         const saleTotal = salePrice * stock.longShares;
         const saleCost = stock.longPrice * stock.longShares;
         const saleProfit = saleTotal - saleCost - 2 * commission;
@@ -54,7 +51,6 @@ function tendStocks(ns) {
       else {
         // create list of long shares to continue to have
         longStocks.add(stock.sym);
-        sellWaitingCalmdown.set(stock.sym + "_long", sellWaitingCalmdown.get(stock.sym + "_long") - 1)
         ns.print(`INFO ${ stock.summary } LONG ${ ns.nFormat(stock.cost + stock.profit, "$0.0a") }`);
         overallValue += (stock.cost + stock.profit);
       }
@@ -66,7 +62,6 @@ function tendStocks(ns) {
       ) {
         // sell due to possibility to loss profits
         const salePrice = ns.stock.sellShort(stock.sym, stock.shortShares);
-        sellWaitingCalmdown.set(stock.sym + "_short", BUY_AFTER_SOLD_CALMDOWN_CYCLES)
         const saleTotal = salePrice * stock.shortShares;
         const saleCost = stock.shortPrice * stock.shortShares;
         const saleProfit = saleCost - saleTotal - 2 * commission;
@@ -77,7 +72,6 @@ function tendStocks(ns) {
       else {
         // create list of short shares to continue to have
         shortStocks.add(stock.sym);
-        sellWaitingCalmdown.set(stock.sym + "_short", sellWaitingCalmdown.get(stock.sym + "_short") - 1)
         ns.print(`INFO ${ stock.summary } SHORT ${ ns.nFormat(stock.cost + stock.profit, "$0.0a") }`);
         overallValue += (stock.cost + stock.profit);
       }
@@ -93,7 +87,6 @@ function tendStocks(ns) {
     var money = ns.getServerMoneyAvailable("home") - MONEY_THRESH;
     //ns.print(`INFO ${stock.summary}`);
     if (
-      // sellWaitingCalmdown.get(stock.sym + "_long") < 0 &&
       (stock.forecast > FORECAST_THRESH_BUY || stock.askPrice < 1) &&
       stock.shortShares === 0 &&
       stock.longShares < stock.maxShares
@@ -107,7 +100,6 @@ function tendStocks(ns) {
         }
       }
     } else if (
-      // sellWaitingCalmdown.get(stock.sym + "_short") < 0 &&
       stock.forecast < 1 - FORECAST_THRESH_BUY &&
       stock.longShares === 0 &&
       stock.shortShares < stock.maxShares &&
