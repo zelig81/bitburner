@@ -29,7 +29,9 @@ function crawl(ns, node, nodeMap) {
 
 /** @param {NS} ns **/
 function printMap(ns, node, nodeMap, indent) {
-  ns.tprintf(`${ indent }${ node.name }(${ ns.hasRootAccess(node.name) ? "Y" : "N" }|${ ns.getServerNumPortsRequired(node.name) }|${ ns.getServerRequiredHackingLevel(node.name) }|${ ns.nFormat(ns.getServerMaxMoney(node.name), "$0.0a")})`);
+  let server = ns.getServer(node.name)
+  let serverStatus = server.backdoorInstalled ? "B" : (server.hasAdminRights ? "R" : "-")
+  ns.tprintf(`${ indent }${ node.name }(${ serverStatus }|${ server.numOpenPortsRequired }|${ server.requiredHackingSkill }|${server.maxRam}GB|${ ns.nFormat(server.moneyMax, "$0.0a")})`);
   nodeMap.delete(node.name);
   indent = adjustIndent(indent, node, nodeMap);
   printIndent(ns, indent, node);

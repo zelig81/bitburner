@@ -4,9 +4,10 @@
 // defines if stocks can be shorted (see BitNode 8)
 const shortAvailable = true;
 
-const commission = 100000;
+const commission = 100e3;
 const samplingLength = 30;
 const moneyRatioAPIPurchase = 1.2
+const moneyThreshold = 10e6
 
 function predictState(samples) {
   const limits = [null, null, null, null, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 19, 19, 20];
@@ -83,12 +84,22 @@ export async function main(ns) {
     ) {
       ns.stock.purchase4SMarketData()
       ns.stock.purchase4SMarketDataTixApi()
-      if (shortAvailable) {
-        ns.exec("stockShorts.js", "home")
-      } else {
-        ns.exec("stockShorts.js", "home", 1, [false])
+    }
+
+    if (ns.stock.has4SData() && ns.stock.has4SDataTIXAPI()) {
+      const homeMaxRam = ns.getServerMaxRam("home");
+      const homeUsedRam = ns.getServerUsedRam("home")
+      if (homeMaxRam - homeUsedRam >= 26.8) {
+        if (shortAvailable) {
+          ns.exec("stockShort.js", "home")
+        } else {
+          ns.exec("stockShorts.j", "home", 1, [false])
+        }
+        ns.print('Launched stockShorts.js')
+        return
       }
-      return
+      ns.print(`Cannot launch stockShorts.js, free RAM ${ homeMaxRam - homeUsedRam} < 26.8Gi`)
+      continue;
     }
 
     if (symLastPrice['FSIG'] === ns.stock.getPrice('FSIG')) {
@@ -167,15 +178,15 @@ export async function main(ns) {
         shortStocks.add(sym);
       }
       const money = ns.getServerMoneyAvailable("home");
-      if (money > commission * 1000) {
+      if (money > moneyThreshold + commission * 2000) {
         if (state > 0 && !sold) {
-          const sharesToBuy = Math.min(ns.stock.getMaxShares(sym), Math.floor((money - commission) / askPrice));
+          const sharesToBuy = Math.min(ns.stock.getMaxShares(sym), Math.floor((money - moneyThreshold - commission) / askPrice));
           if (ns.stock.buyStock(sym, sharesToBuy) > 0) {
             longStocks.add(sym);
             ns.print(`INFO BOUGHT (long) ${ sym }.`);
           }
         } else if (state < 0 && !sold && shortAvailable) {
-          const sharesToBuy = Math.min(ns.stock.getMaxShares(sym), Math.floor((money - commission) / bidPrice));
+          const sharesToBuy = Math.min(ns.stock.getMaxShares(sym), Math.floor((money - moneyThreshold - commission) / bidPrice));
           if (ns.stock.buyShort(sym, sharesToBuy) > 0) {
             shortStocks.add(sym);
             ns.print(`INFO BOUGHT (short) ${ sym }.`);

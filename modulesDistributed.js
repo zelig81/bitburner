@@ -5,8 +5,9 @@
 
 const enabledNetManager = true
 const singularityFunctionsAvailable = true;
-const areHacknetServersAccessible = true
-const maxHacknetSpend = 2 * 10 ** 12
+const areHacknetServersAccessible = false
+const isSleevesAvailable = true
+const maxHacknetSpend = 2e12
 
 // hack severs for this much of their money
 // the money ratio is increased and decreased automatically, starting with this value initially
@@ -17,7 +18,7 @@ var hackMoneyRatio = 0.1;
 var maxParallelAttacks = 50;
 
 // time to wait between checking and calculating new attacks (in ms)
-const waitTimeBetweenManagementCycles = 1000;
+const waitTimeBetweenManagementCycles = 1e3;
 
 // time difference between finishing [ hack - grow - weaken ] in burst attacks (in ms)
 const timeDiff = 200;
@@ -53,6 +54,16 @@ const backdoorScriptRam = 5.8;
 // Solve Contract Script hooked in
 const solveContractsScript = "solveContracts.js";
 const solveContractsScriptRam = 22;
+
+// playerActions launching
+let isPlayerActionsScriptLaunched = false
+const playerActionsScript = "playerActions.js";
+const playerActionsScriptRam = 73.35;
+
+// sleevesActions launching
+let isSleevesActionsScriptLaunched = false
+const sleevesActionsScript = "sleevesActions.js";
+const sleevesActionsScriptRam = 32;
 
 // global variable to track ongoing partial weak or grow attacks
 var partialWeakGrow = null; // do not change this
@@ -108,9 +119,28 @@ export async function main(ns) {
   var shareThreadIndex = 0;
 
   while (true) {
+    const homeMaxRam = ns.getServerMaxRam("home");
 
     cycleNumber++
     if (enabledNetManager) { await hnManager(ns) }
+
+    let homeFreeRam = homeMaxRam - ns.getServerUsedRam("home");
+    if (!isPlayerActionsScriptLaunched && homeFreeRam >= playerActionsScriptRam) {
+      let pid = ns.getRunningScript(playerActionsScript)
+      if (pid === null) {
+        ns.exec(playerActionsScript, "home")
+        isPlayerActionsScriptLaunched = true
+      }
+    }
+
+    homeFreeRam = homeMaxRam - ns.getServerUsedRam("home");
+    if (isSleevesAvailable && !isSleevesActionsScriptLaunched && homeFreeRam >= slaveScriptRam) {
+      let pid = ns.getRunningScript(sleevesActionsScript)
+      if (pid === null) {
+        ns.exec(sleevesActionsScript, "home")
+        isSleevesActionsScriptLaunched = true
+      }
+    }
 
     // scan and nuke all accesible servers
     servers = await scanAndNuke(ns);
@@ -128,10 +158,8 @@ export async function main(ns) {
         // backdoor faction servers automatically requires singularity module
         // modify singularityFunctionsAvailable at the top to de- / activate
         if (singularityFunctionsAvailable == true) {
-          if (knownServers.get(server).requiredHackingLevel <= ns.getHackingLevel() && !knownServers.get(server).isBackdoored) {
-            const homeMaxRam = ns.getServerMaxRam("home");
-            const homeUsedRam = ns.getServerUsedRam("home")
-            const homeFreeRam = homeMaxRam - homeUsedRam;
+          if (knownServers.get(server).requiredHackingLevel <= ns.getPlayer().skills.hacking && !knownServers.get(server).isBackdoored) {
+            homeFreeRam = homeMaxRam - ns.getServerUsedRam("home");
             if (homeFreeRam >= backdoorScriptRam) {
               const backdoorSuccess = ns.exec(backdoorScript, "home", 1, server);
               ns.print("INFO backdoor on " + server + " - " + backdoorSuccess);
@@ -189,9 +217,7 @@ export async function main(ns) {
     }
 
     // Hook for solve contracts script here if enough RAM is free.
-    const homeMaxRam = ns.getServerMaxRam("home");
-    const homeUsedRam = ns.getServerUsedRam("home")
-    const homeFreeRam = homeMaxRam - homeUsedRam;
+    homeFreeRam = homeMaxRam - ns.getServerUsedRam("home");
     if (homeFreeRam > solveContractsScriptRam && hackMoneyRatio >= 0.07 && cycleNumber % 10 === 0) {
       ns.print("INFO checking for contracts to solve");
       ns.exec(solveContractsScript, "home");
@@ -548,7 +574,7 @@ function xpWeaken(ns, freeRams, servers, targets) {
   // other weaken threads should never sleep for 1 ms
   const xpWeakSleep = 1;
 
-  const playerHackingLevel = ns.getHackingLevel();
+  const playerHackingLevel = ns.getPlayer().skills.hacking;
   targets.sort((a, b) => weakenXPgainCompare(ns, playerHackingLevel, a) - weakenXPgainCompare(ns, playerHackingLevel, b))
 
   for (let target of targets) {
@@ -660,8 +686,8 @@ function xpAttackOngoing(ns, servers, target, weakSleep) {
 // filter and sort the list for hackable servers
 function getHackable(ns, servers) {
 
-  var sortedServers = [...servers.values()].filter(server => ns.getServerMaxMoney(server) > 100000
-    && ns.getServerRequiredHackingLevel(server) <= ns.getHackingLevel()
+  var sortedServers = [...servers.values()].filter(server => ns.getServerMaxMoney(server) > 100e3
+    && ns.getServerRequiredHackingLevel(server) <= ns.getPlayer().skills.hacking
     && ns.getServerGrowth(server) > 1 && server != "n00dles").sort((a, b) =>
       profitsm["get"](b) - profitsm["get"](a))
   // unnatural usage of "get" to avoid stanek.get RAM calculation bug
@@ -793,24 +819,99 @@ async function hnManager(ns) {
   let hashCapacity = ns.hacknet.hashCapacity()
   let timesToSellForMoney = Math.floor(numHashes / 4)
   let currentMoney = ns.getPlayer().money
+
   if (
-    (numHashes > 4 && numHashes > hashCapacity * 0.95) ||
     (!ns.stock.has4SDataTIXAPI() && timesToSellForMoney > 100) ||
-    // currentMoney > maxHacknetSpend * 10 ||
-    currentMoney < 10 ** 8
+    (currentMoney < 1e7 && currentMoney > 0 && timesToSellForMoney > 1)
   ) {
-    if (
-      (!ns.stock.has4SDataTIXAPI() && timesToSellForMoney > 100) ||
-      (currentMoney < 10 ** 8 && currentMoney > 0 && timesToSellForMoney > 1)
-    ) {
-      ns.hacknet.spendHashes("Sell for Money", "", timesToSellForMoney)
-      ns.print(`HackNet spend hashes for money x${ timesToSellForMoney } times`)
-    } else if (numHashes - 0.95 * hashCapacity < 200 && numHashes - 0.95 * hashCapacity > 4) {
-      timesToSellForMoney = Math.floor((numHashes - 0.95 * hashCapacity) / 4)
-      ns.hacknet.spendHashes("Sell for Money", "", timesToSellForMoney)
-      ns.print(`HackNet spend hashes for money near cap x${ timesToSellForMoney } times`)
-    }
+    ns.hacknet.spendHashes("Sell for Money", "", timesToSellForMoney)
+    ns.print(`HackNet spend hashes for money x${ timesToSellForMoney } times`)
+  } else if (numHashes - 0.95 * hashCapacity > 4) {
+    timesToSellForMoney = Math.floor((numHashes - 0.95 * hashCapacity) / 4)
+    ns.hacknet.spendHashes("Sell for Money", "", timesToSellForMoney)
+    ns.print(`HackNet spend hashes for money near cap x${ timesToSellForMoney } times`)
   }
+
+  purchaseHacknetUpgradeOld(ns)
+}
+
+// new purchase mechanism based on added productivity
+const purchaseHacknetUpgrade = (ns) => {
+  let ratioToSpend = getHacknetRatioToSpend(ns)
+  let player = ns.getPlayer()
+
+  let listNoProfit = []
+  let listProfit = []
+  let maxProductionPerSec = 0
+  let productionPerSec = 0
+  let cost = 0
+  for (let i = 0; i < ns.hacknet.numNodes(); i++) {
+    let nodeStats = ns.hacknet.getNodeStats(i)
+    let currentProduction = ns.formulas.hacknetServers.hashGainRate(
+      nodeStats.level, 0, nodeStats.ram, nodeStats.cores, player.mults.hacknet_node_money)
+
+    // Level
+    productionPerSec = currentProduction - ns.formulas.hacknetServers.hashGainRate(nodeStats.level + 1, 0, nodeStats.ram, nodeStats.cores, player.mults.hacknet_node_money)
+    maxProductionPerSec = maxProductionPerSec < productionPerSec ? productionPerSec : maxProductionPerSec
+    cost = ns.formulas.hacknetServers.levelUpgradeCost(nodeStats.level, 1, player.mults.hacknet_node_level_cost)
+    listProfit.push([
+      i,
+      'Level',
+      productionPerSec,
+      cost,
+      productionPerSec / cost // for sorting
+    ])
+
+    // Ram
+    productionPerSec = currentProduction - ns.formulas.hacknetServers.hashGainRate(nodeStats.level, 0, nodeStats.ram * 2, nodeStats.cores, player.mults.hacknet_node_money)
+    maxProductionPerSec = maxProductionPerSec < productionPerSec ? productionPerSec : maxProductionPerSec
+    cost = ns.formulas.hacknetServers.ramUpgradeCost(nodeStats.ram, 1, player.mults.hacknet_node_ram_cost)
+    listProfit.push([
+      i,
+      'Ram',
+      productionPerSec,
+      cost,
+      productionPerSec / cost // for sorting
+    ])
+
+    // Cores
+    productionPerSec = currentProduction - ns.formulas.hacknetServers.hashGainRate(nodeStats.level, 0, nodeStats.ram, nodeStats.cores + 1, player.mults.hacknet_node_money)
+    maxProductionPerSec = maxProductionPerSec < productionPerSec ? productionPerSec : maxProductionPerSec
+    cost = ns.formulas.hacknetServers.coresUpgradeCost(nodeStats.cores, 1, player.mults.hacknet_node_cores_cost)
+    listProfit.push([
+      i,
+      'Cores',
+      productionPerSec,
+      cost,
+      productionPerSec / cost // for sorting
+    ])
+
+    // Caches
+    cost = ns.formulas.hacknetServers.cacheUpgradeCost(nodeStats.cache, 1)
+    listProfit.push([
+      i,
+      'Cache',
+      0,
+      cost,
+      0 // for sorting
+    ])
+
+  }
+  listProfit.push([
+    -1,
+    'Node',
+    0,
+    ,
+    0
+
+  ])
+  //todo: check if caches are needed due to 1/2 of cap hashes for contractes
+  //todo: node is 1/5 of max cost
+  //todo: sort, first get best production / cost
+  //todo: choose RamOrCoresOrLevel | caches (if contractes or 1/5 of max cost) | node (if 1/5 of max cost)
+}
+
+const purchaseHacknetUpgradeOld = (ns) => {
 
   let ratioToSpend = getHacknetRatioToSpend(ns)
 
@@ -827,23 +928,24 @@ async function hnManager(ns) {
       }
     }
   }
+
 }
 
 const checkMoney = (ns, moneyToSpend, ratioToSpend, boundary = maxHacknetSpend) => eval(moneyToSpend < ns.getPlayer().money / ratioToSpend && moneyToSpend < boundary)
 
 const getHacknetRatioToSpend = (ns) => {
-  let ratioToSpend = 10000
+  let ratioToSpend = 10e3
   let currentMoney = ns.getPlayer().money
-  if (currentMoney < 10 ** 6) {
+  if (currentMoney < 1e6) {
     ratioToSpend = 1
-  } else if (currentMoney < 10 ** 8) {
+  } else if (currentMoney < 3e8) {
     ratioToSpend = 5
-  } else if (currentMoney < 10 ** 9) {
+  } else if (currentMoney < 3e9) {
     ratioToSpend = 100
   } else if (currentMoney < maxHacknetSpend) {
-    ratioToSpend = 1000
-  } else {
-    ratioToSpend = 10
+    ratioToSpend = 1e3
+  // } else {
+  //   ratioToSpend = 10
   }
   return ratioToSpend
 }

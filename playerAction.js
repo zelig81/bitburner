@@ -95,6 +95,8 @@ export async function main(ns) {
         ns.print(`Work for company: ${ currentWork.companyName }`)
       } else if (currentWork.type === "FACTION") {
         ns.print(`Work for faction: ${ currentWork.factionName } by making ${ currentWork.factionWorkType }`)
+      } else if (currentWork.type === "CREATE_PROGRAM") {
+        ns.print(`Creating program: ${ currentWork.programName }`)
       } else if (currentWork.type === "CLASS") {
         ns.print(`Study: ${ currentWork.classType } at  ${ currentWork.location }`)
       }
@@ -131,11 +133,12 @@ function upgradeHomeServer(ns) {
 function getSingleProgram(ns, program, threshold) {
   let player = ns.getPlayer()
   let focus = ns.singularity.isFocused()
+  let currentWork = ns.singularity.getCurrentWork()
 
   if (!ns.fileExists(program)) {
     if (player.money > threshold * moneyThreshold) {
       ns.singularity.purchaseProgram(program);
-    } else {
+    } else if (currentWork && currentWork.type !== "CREATE_PROGRAM" && player.skills.hacking > studyUntilHackLevel) {
       ns.singularity.createProgram(program, focus)
     }
   }
@@ -145,7 +148,7 @@ function getSingleProgram(ns, program, threshold) {
 function getPrograms(ns) {
   let player = ns.getPlayer()
   if (!player.tor) {
-    if (player.money > 2 * 10 ** 5 * moneyThreshold) {
+    if (player.money > 2e5 * moneyThreshold) {
       ns.singularity.purchaseTor();
       ns.print("Purchased TOR");
       ns.toast("Purchased TOR");
@@ -155,12 +158,12 @@ function getPrograms(ns) {
     }
   }
 
-  getSingleProgram(ns, "BruteSSH.exe", 5 * 10 ** 5)
-  getSingleProgram(ns, "FTPCrack.exe", 1.5 * 10 ** 6)
-  getSingleProgram(ns, "relaySMTP.exe", 5 * 10 ** 5)
+  getSingleProgram(ns, "BruteSSH.exe", 5e5)
+  getSingleProgram(ns, "FTPCrack.exe", 1.5e6)
+  getSingleProgram(ns, "relaySMTP.exe", 5e5)
 
   player = ns.getPlayer()
-  if (ns.stock.has4SDataTIXAPI() && player.money > 280 * 10 ** 6 * moneyThreshold) {
+  if (ns.stock.has4SDataTIXAPI() && player.money > 280e6 * moneyThreshold) {
     // do not buy more before 4s data access bought
     ns.singularity.purchaseProgram("HTTPWorm.exe");
     ns.singularity.purchaseProgram("SQLInject.exe");
@@ -176,7 +179,7 @@ function chooseAction(ns, sleepTime, factions) {
   if (
     player.skills.hacking < studyUntilHackLevel &&
     (currentWork == null ||
-    currentWork.type !== "CLASS")
+      currentWork.type !== "CLASS")
   ) {
     ns.singularity.universityCourse("rothman university", "Study Computer Science", focus);
     return sleepTime;
@@ -185,18 +188,28 @@ function chooseAction(ns, sleepTime, factions) {
 
   if (factions.size > 0) {
     var faction = factions.keys().next().value;
-    const factionsFieldWork = ["Slum Snakes", "Tetrads"];
-    var wType = "Hacking Contracts";
-    if (factionsFieldWork.includes(faction)) {
-      wType = "Field Work";
-    }
-    const success = ns.singularity.workForFaction(faction, wType, focus);
+    // const factionsFieldWork = ["Slum Snakes", "Tetrads"];
+    // var wType = "Hacking Contracts";
+    // if (factionsFieldWork.includes(faction)) {
+    //   wType = "Field Work";
+    // }
+    let success = ns.singularity.workForFaction(faction, "SECURITY", focus);
     if (success) {
       ns.print("Start working for faction " + faction);
       ns.toast("Start working for faction " + faction, "success", 5000);
       return sleepTime;
-    } else {
-      ns.print("Could not perform intended action: " + faction + " -> " + wType);
+    }
+    success = ns.singularity.workForFaction(faction, "FIELD", focus);
+    if (success) {
+      ns.print("Start working for faction " + faction);
+      ns.toast("Start working for faction " + faction, "success", 5000);
+      return sleepTime;
+    }
+    success = ns.singularity.workForFaction(faction, "HACKING", focus);
+    if (success) {
+      ns.print("Start working for faction " + faction);
+      ns.toast("Start working for faction " + faction, "success", 5000);
+      return sleepTime;
     }
   }
 
@@ -218,7 +231,7 @@ function applyForPromotion(ns, corpToWorkFor) {
   let focus = ns.singularity.isFocused();
   let currentWork = ns.singularity.getCurrentWork()
 
-  var career = "it"
+  var career = "security" // it, software, security
 
   var success = ns.singularity.applyToCompany(corpToWorkFor, career);
 
@@ -244,6 +257,13 @@ function currentActionUseful(ns, factions) {
     if (currentWork.type === "CREATE_PROGRAM") {
       return true;
     }
+    if (currentWork.type === "GRAFTING") {
+      if (playerControlPort.empty()) {
+        // only write to ports if empty
+        playerControlPort.write(false);
+      }
+      return true;
+    }
     if (currentWork.type === "FACTION") {
       if (factions.has(currentWork.factionName)) {
         var repRemaining = factions.get(currentWork.factionName)
@@ -263,13 +283,12 @@ function currentActionUseful(ns, factions) {
           let focusBonus = ns.singularity.getOwnedAugmentations().includes("Neuroreceptor Management Implant") ? 1 : 0.8;
           let appliedFocusBonus = ns.singularity.isFocused() ? 1 : focusBonus
           let reputationGain = (1 + (1 * Math.pow(player.skills.intelligence, 0.8)) / 600) * factionRepGain.reputation * factionRepGain.hackExp * appliedFocusBonus
-
-          let reputationTimeRemaining = repRemaining / reputationGain * 6;
+          let reputationTimeRemaining = repRemaining / reputationGain * 5;
           let hours = Math.floor(reputationTimeRemaining / 3600)
           let minutes = Math.floor((reputationTimeRemaining - hours * 3600) / 60)
           let seconds = Math.floor(reputationTimeRemaining - hours * 3600 - 60 * minutes)
 
-          ns.print(`Reputation remaining: ${ns.nFormat(repRemaining, "0.0a")} in ${hours} hours ${minutes} minutes ${seconds} seconds`);
+          ns.print(`Reputation remaining: ${ ns.nFormat(repRemaining, "0.0a") } in ${ hours } hours ${ minutes } minutes ${ seconds } seconds`);
           return true;
         } else {
           ns.print("Max Reputation @ " + currentWork.factionName);
@@ -293,7 +312,7 @@ function currentActionUseful(ns, factions) {
     if (currentWork.type === "COMPANY") {
       var reputation = ns.singularity.getCompanyRep(currentWork.companyName)
       ns.print("Company reputation: " + ns.nFormat(reputation, "0a"));
-      if (reputation > 4 * 10 ** 5 || factions.has(currentWork.companyName)) {
+      if (reputation > 4e5 || factions.has(currentWork.companyName)) {
         return false;
       } else {
         applyForPromotion(ns, currentWork.companyName);
@@ -305,7 +324,7 @@ function currentActionUseful(ns, factions) {
         let crimeChance = ns.singularity.getCrimeChance(crime);
         if (
           (currentWork.crimeType == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
-          (currentWork.crimeType == "MUG" && player.money < 9 * 10 ** 6) ||
+          (currentWork.crimeType == "MUG" && player.money < 9e6) ||
           (currentWork.crimeType == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
           (currentWork.crimeType == "HOMICIDE" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
           (currentWork.crimeType == "KIDNAP" && crimeChance > 0.25) // best for intelligence and time to skills
@@ -346,69 +365,75 @@ function getCorpsForReputation(ns) {
 function buyAugments(ns) {
   // todo: refactor for better understanding
   var player = ns.getPlayer();
-  var sortedAugmentations = [];
+  var unsortedAugmentationsSet = new Set();
+  let augmentationProps = {}
+  let augmentationsOfFactions = {}
 
   for (const faction of player.factions) {
-    var purchasedAugmentations = ns.singularity.getOwnedAugmentations(true);
     var augmentations = ns.singularity.getAugmentationsFromFaction(faction);
-    var newAugmentations = augmentations.filter(val => !purchasedAugmentations.includes(val));
-    for (const augmentation of newAugmentations) {
+    for (const augmentation of augmentations) {
       if (ns.singularity.getAugmentationRepReq(augmentation) <= ns.singularity.getFactionRep(faction)) {
-        let price = ns.singularity.getAugmentationPrice(augmentation);
-        sortedAugmentations.push([augmentation, price, faction]);
-      }
-    }
-  }
-
-  // make map of augmentations to factions
-  let augmentationsOfFactions = {}
-  for (let augmentation of sortedAugmentations) {
-    if (!(augmentation[0] in augmentationsOfFactions)) {
-      augmentationsOfFactions[augmentation[0]] = []
-    }
-    augmentationsOfFactions[augmentation[0]].push(augmentation[2])
-  }
-
-  // costs are the second element in the 2d arrays
-  sortedAugmentations.sort((a, b) => b[1] - a[1]);
-  var augmentationCostMultiplier = 1;
-  var preReqAugments = [];
-  var skipAugments = [];
-  var overallAugmentationCost = 0;
-  for (var i = 0; i < sortedAugmentations.length; i++) {
-
-
-    for (var preReqAug of ns.singularity.getAugmentationPrereq(sortedAugmentations[i][0])) {
-      if (!preReqAugments.includes(preReqAug) && !purchasedAugmentations.includes(preReqAug)) {
-        preReqAugments.push(preReqAug);
-        //ns.print("move prereq aug: " + preReqAug + " before " + sortedAugmentations[i][0]);
-        sortedAugmentations.splice(i, 0, [preReqAug, ns.singularity.getAugmentationPrice(preReqAug)]);
-        //overallAugmentationCost += sortedAugmentations[i][1] * augmentationCostMultiplier;
-        if (i >= 0) {
-          i--;
+        // make map of augmentations to factions
+        if (!(augmentation in augmentationProps)) {
+          let price = ns.singularity.getAugmentationPrice(augmentation);
+          let prereq = ns.singularity.getAugmentationPrereq(augmentation)
+          augmentationProps[augmentation] = {
+            "price": price,
+            "prereq": prereq,
+            "factions": new Set()
+          }
         }
-        //augmentationCostMultiplier *= 2;
+        // add new augmentation
+        augmentationProps[augmentation].factions.add(faction)
+        unsortedAugmentationsSet.add(augmentation);
       }
-    }
-    if (i >= 0) {
-      if (i > 0 && sortedAugmentations[i][0] == sortedAugmentations[i - 1][0] || skipAugments.includes(sortedAugmentations[i][0])) {
-        //ns.print("remove duplicate aug: " + sortedAugmentations[i][0]);
-        sortedAugmentations.splice(i, 1);
-        i--;
-        continue;
-      }
-      else if (preReqAugments.includes(sortedAugmentations[i][0])) {
-        //ns.print("skip prereq aug: " + sortedAugmentations[i][0]);
-        skipAugments.push((sortedAugmentations[i][0]));
-      }
-      overallAugmentationCost += sortedAugmentations[i][1] * augmentationCostMultiplier;
-      augmentationCostMultiplier *= 1.9;
     }
   }
-  let printableSortedAugmentations = sortedAugmentations.map(([augmentation, price, _]) => [augmentation, ns.nFormat(price, "$0.0a"), augmentationsOfFactions[augmentation]])
+
+  // sort by price
+  let unsortedAugmentations = Array.from(unsortedAugmentationsSet)
+  unsortedAugmentations.sort((a, b) => augmentationProps[b]["price"] - augmentationProps[a]["price"]);
+
+  // sort by prerequisites
+  let sortedAugmentations = []
+  while (unsortedAugmentations.length > 0) {
+    let currentAugmentation = unsortedAugmentations[0]
+    unsortedAugmentations.splice(0, 1)
+    if (augmentationProps[currentAugmentation].prereq.length > 0) {
+      for (let augmentation of ns.singularity.getAugmentationPrereq(currentAugmentation).reverse()) {
+        // make map of augmentations to factions
+        if (!(augmentation in augmentationProps)) {
+          let price = ns.singularity.getAugmentationPrice(augmentation);
+          let prereq = ns.singularity.getAugmentationPrereq(augmentation)
+          augmentationProps[augmentation] = {
+            "price": price,
+            "prereq": prereq,
+            "factions": new Set()
+          }
+        }
+        sortedAugmentations.push(augmentation)
+        unsortedAugmentations.splice(unsortedAugmentations.indexOf(augmentation), 1)
+      }
+    }
+    sortedAugmentations.push(currentAugmentation)
+  }
+
+  // remove from the list already owned
+  var purchasedAugmentations = ns.singularity.getOwnedAugmentations(true);
+  sortedAugmentations = sortedAugmentations.filter(val => !purchasedAugmentations.includes(val));
+
+  // get overall cost
+  var augmentationCostMultiplier = 1;
+  var overallAugmentationCost = 0;
+  for (let augmentation of sortedAugmentations) {
+    overallAugmentationCost += augmentationProps[augmentation]["price"] * augmentationCostMultiplier;
+    augmentationCostMultiplier *= 1.9;
+  }
+
+  let printableSortedAugmentations = sortedAugmentations.map((augmentation) => [augmentation, ns.nFormat(augmentationProps[augmentation]["price"], "$0.0a"), Array.from(augmentationProps[augmentation].factions)])
 
   ns.print("Augmentation purchase order: " + JSON.stringify(printableSortedAugmentations))
-  ns.print("Current augmentation purchase cost: " + ns.nFormat(overallAugmentationCost, "0.0a"));
+  ns.print("Current augmentation purchase cost: " + ns.nFormat(overallAugmentationCost, "$0.0a"));
 
   if (player.money > overallAugmentationCost) {
     // decide when it's time to install
@@ -438,7 +463,7 @@ function maxAugmentRep(ns, faction) {
       }
       maxReputationRequired = Math.max(maxReputationRequired, ns.singularity.getAugmentationRepReq(augmentation));
       let donateFavorLevel = ns.formulas.reputation.calculateFavorToRep(150 - ns.singularity.getFactionFavor(faction))
-      if (maxReputationRequired <= 5 * 10 ** 5 && output < maxReputationRequired) {
+      if (maxReputationRequired <= 5e5 && output < maxReputationRequired) {
         output = maxReputationRequired
         continue
       }
@@ -472,7 +497,7 @@ function hasAllAugmentations(ns, faction) {
 function joinFactions(ns) {
   const newFactions = ns.singularity.checkFactionInvitations();
   for (const faction of newFactions) {
-    if (!cityFactions.includes(faction) || ! hasAllAugmentations(ns, faction)) {
+    if (!cityFactions.includes(faction) && !hasAllAugmentations(ns, faction)) {
       ns.singularity.joinFaction(faction);
       ns.print("Joined " + faction);
     }
@@ -503,11 +528,11 @@ function commitCrime(ns) {
       bestCrime = "KIDNAP";
       bestCrimeStats = crimeStats;
       break;
-    } else if (crime == "MUG" && crimeChance > 0.5 && player.money < 9 * 10 ** 6) {
+    } else if (crime == "MUG" && crimeChance > 0.5 && player.money < 9e6) {
       bestCrime = "MUG";
       bestCrimeStats = crimeStats;
       break;
-    } else if (crime == "ROBSTORE" && crimeChance > 0.5 && player.money < 9 * 10 ** 6) {
+    } else if (crime == "ROBSTORE" && crimeChance > 0.5 && player.money < 9e6) {
       bestCrime = "ROBSTORE";
       bestCrimeStats = crimeStats;
       break;
@@ -516,16 +541,16 @@ function commitCrime(ns) {
     var crimeValue = 0;
     let combatStatsGoal = 200
     if (player.strength < combatStatsGoal) {
-      crimeValue += 100000 * crimeStats.strength_exp;
+      crimeValue += 1e5 * crimeStats.strength_exp;
     }
     if (player.defense < combatStatsGoal) {
-      crimeValue += 100000 * crimeStats.defense_exp;
+      crimeValue += 1e5 * crimeStats.defense_exp;
     }
     if (player.dexterity < combatStatsGoal) {
-      crimeValue += 100000 * crimeStats.dexterity_exp;
+      crimeValue += 1e5 * crimeStats.dexterity_exp;
     }
     if (player.agility < combatStatsGoal) {
-      crimeValue += 100000 * crimeStats.agility_exp;
+      crimeValue += 1e5 * crimeStats.agility_exp;
     }
     // crimeValue += crimeStats.money;
     //ns.print(ns.nFormat(crimeChance,"0.00a")+"/"+ns.nFormat(crimeStats.time,"000a")+"|"+crimeStats.strength_exp + "|" + crimeStats.defense_exp + "|" + crimeStats.dexterity_exp + "|" + crimeStats.agility_exp + "|" + ns.nFormat(crimeStats.money,"0a")+"|"+crime);

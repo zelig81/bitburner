@@ -37,7 +37,7 @@ function tendStocks(ns) {
           stock.forecast < FORECAST_THRESH_SELL
           || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)
           || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX
-        ) && stock.bidPrice > 100
+        ) && ns.stock.getPrice(stock.sym) > 100
       ) {
         // sell due to possibility to loss profits
         const salePrice = ns.stock.sellStock(stock.sym, stock.longShares);
