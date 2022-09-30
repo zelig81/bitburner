@@ -3,12 +3,12 @@
 
 // requires 4s Market Data TIX API Access
 
-const commission = 100000;
+const commission = 100e3;
 const FORECAST_THRESH_BUY = 0.57;
 const FORECAST_THRESH_SELL = 0.47;
 const PROFIT_THRESH_SELL = - 0.015;
 const PROFIT_THRESH_SELL_MAX = - 0.03;
-const MONEY_THRESH = 10 * 1000000
+const MONEY_THRESH = 12e6
 
 export async function main(ns) {
   ns.disableLog("ALL");
@@ -16,7 +16,7 @@ export async function main(ns) {
 
   while (true) {
     tendStocks(ns);
-    await ns.sleep(5 * 1000);
+    await ns.sleep(5e3);
   }
 }
 
@@ -33,11 +33,9 @@ function tendStocks(ns) {
   for (const stock of stocks) {
     if (stock.longShares > 0) {
       if (
-        (
-          stock.forecast < FORECAST_THRESH_SELL
-          || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)
-          || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX
-        ) && ns.stock.getPrice(stock.sym) > 100
+        stock.forecast < FORECAST_THRESH_SELL
+        || (stock.forecast < 0.55 && stock.profit / stock.cost < PROFIT_THRESH_SELL)
+        || stock.profit / stock.cost < PROFIT_THRESH_SELL_MAX
       ) {
         // sell due to possibility to loss profits
         const salePrice = ns.stock.sellStock(stock.sym, stock.longShares);
@@ -75,7 +73,7 @@ function tendStocks(ns) {
         ns.print(`INFO ${ stock.summary } SHORT ${ ns.nFormat(stock.cost + stock.profit, "$0.0a") }`);
         overallValue += (stock.cost + stock.profit);
       }
-    } else if (stock.askPrice > 10 ** 6 && stock.longShares === 0) { // if the askPrice is huge, there is a good place to make short profit from hack (if we do not have any shares long or short)
+    } else if (stock.askPrice > 1e6 && stock.longShares === 0) { // if the askPrice is huge, there is a good place to make short profit from hack (if we do not have any shares long or short)
       shortStocks.add(stock.sym);
     }
   }
@@ -115,7 +113,7 @@ function tendStocks(ns) {
       }
     }
   }
-  ns.print("Stock value: " + ns.nFormat(overallValue, "$0.0a"));
+  ns.print("Stock value: " + ns.nFormat(overallValue, "$0.00a"));
 
   // send stock market manipulation orders to hack manager
   var growStockPort = ns.getPortHandle(1); // port 1 is grow
