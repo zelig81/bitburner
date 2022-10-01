@@ -85,7 +85,7 @@ function tendStocks(ns) {
     var money = ns.getServerMoneyAvailable("home") - MONEY_THRESH;
     //ns.print(`INFO ${stock.summary}`);
     if (
-      (stock.forecast > FORECAST_THRESH_BUY || stock.askPrice < 1) &&
+      stock.forecast > FORECAST_THRESH_BUY &&
       stock.shortShares === 0 &&
       stock.longShares < stock.maxShares
     ) {
