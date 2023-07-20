@@ -87,7 +87,8 @@ function tendStocks(ns) {
     if (
       stock.forecast > FORECAST_THRESH_BUY &&
       stock.shortShares === 0 &&
-      stock.longShares < stock.maxShares
+      stock.longShares < stock.maxShares &&
+      stock.askPrice > 100
     ) {
       longStocks.add(stock.sym);
       //ns.print(`INFO ${stock.summary}`);
@@ -101,6 +102,7 @@ function tendStocks(ns) {
       stock.forecast < 1 - FORECAST_THRESH_BUY &&
       stock.longShares === 0 &&
       stock.shortShares < stock.maxShares &&
+      stock.askPrice > 1000 &&
       shortAvailable
     ) {
       shortStocks.add(stock.sym);

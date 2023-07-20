@@ -147,7 +147,7 @@ function getSingleProgram(ns, program, threshold) {
 
 function getPrograms(ns) {
   let player = ns.getPlayer()
-  if (!player.tor) {
+  if (!ns.hasTorRouter()) {
     if (player.money > 2e5 * moneyThreshold) {
       ns.singularity.purchaseTor();
       ns.print("Purchased TOR");
@@ -260,7 +260,7 @@ function currentActionUseful(ns, factions) {
     if (currentWork.type === "GRAFTING") {
       if (playerControlPort.empty()) {
         // only write to ports if empty
-        playerControlPort.write(false);
+        playerControlPort.write("false");
       }
       return true;
     }
@@ -272,12 +272,12 @@ function currentActionUseful(ns, factions) {
           if (playerControlPort.empty() && currentWork.factionWorkType === "HACKING") {
             // only write to ports if empty
             ns.print(`run ns.share() to increase faction [${ currentWork.factionName }] reputation`);
-            playerControlPort.write(true);
+            playerControlPort.write("true");
 
           }
           else if (playerControlPort.empty()) {
             // only write to ports if empty
-            playerControlPort.write(false);
+            playerControlPort.write("false");
           }
           let factionRepGain = ns.formulas.work.factionGains(player, "HACKING", ns.singularity.getFactionFavor(currentWork.factionName))
           let focusBonus = ns.singularity.getOwnedAugmentations().includes("Neuroreceptor Management Implant") ? 1 : 0.8;
@@ -298,14 +298,14 @@ function currentActionUseful(ns, factions) {
       } else {
         if (playerControlPort.empty()) {
           // only write to ports if empty
-          playerControlPort.write(false);
+          playerControlPort.write("false");
         }
       }
 
     } else { // not hacking for a faction
       if (playerControlPort.empty()) {
         // only write to ports if empty
-        playerControlPort.write(false);
+        playerControlPort.write("false");
       }
     }
 

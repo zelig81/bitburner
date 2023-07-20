@@ -320,7 +320,7 @@ function manageAndHack(ns, freeRams, servers, targets, growStocks, hackStocks) {
       // Considering 0 cores on all serers.
       // The last parameter 0 can be removed if optimizing for running slave threads on home server with > 0 cores only
       // else, grow threads onother servers than home will not grow sufficiently and break perfect attack chains
-      growThreads = Math.ceil((ns.growthAnalyze(target, overallGrowRatio, 0)));
+      growThreads = Math.ceil((ns.growthAnalyze(target, overallGrowRatio, 1)));
 
       addedGrowSecurity = growThreads * growThreadSecurityIncrease;
     }

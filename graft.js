@@ -22,6 +22,9 @@ export async function main(ns) {
     } else if (unsortedAgumentations.indexOf("nickofolas Congruity Implant") !== -1) {
       augmentationsToGraft.push("nickofolas Congruity Implant")
       unsortedAgumentations.splice(unsortedAgumentations.indexOf("nickofolas Congruity Implant"), 1)
+    } else if (unsortedAgumentations.indexOf("Neuroreceptor Management Implant") !== -1) {
+      augmentationsToGraft.push("Neuroreceptor Management Implant")
+      unsortedAgumentations.splice(unsortedAgumentations.indexOf("Neuroreceptor Management Implant"), 1)
     } else {
       let currentAugmentation = unsortedAgumentations[0]
       unsortedAgumentations.splice(0, 1)
