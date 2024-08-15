@@ -71,7 +71,7 @@ export async function main(ns) {
         let myRank = ns.bladeburner.getRank()
         let requiredRank = ns.bladeburner.getBlackOpRank(action)
         if (!isActionStarted && minChance > 0.95 && myRank > requiredRank && count > 0) {
-          if (currentAction.type !== "BlackOp") {
+          if (currentAction == null || currentAction.type !== "BlackOp") {
             isActionStarted = ns.bladeburner.startAction(type, action)
             if (isActionStarted) {
               ns.print(`blackop started: ${ action }`)
@@ -113,7 +113,7 @@ export async function main(ns) {
       }
 
       // launch of chosen action for operations and contracts
-      if (["Idle", "General"].includes(currentAction.type)) {
+      if (currentAction == null || ["General"].includes(currentAction.type)) {
         isActionStarted = ns.bladeburner.startAction(operationType, operationName)
         if (isActionStarted) {
           ns.print(`${ operationType } started: ${ operationName }, action gain: ${ ns.nFormat(operationGain, "0.00a") }`)

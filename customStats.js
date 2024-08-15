@@ -10,9 +10,9 @@ export async function main(ns) {
       const values = [];
       headers.push("Karma");
       values.push(ns.heart.break());
-      headers.push("ScrExp");
+      headers.push("Script Exp");
       values.push(ns.getTotalScriptExpGain().toPrecision(5) + '/sec');
-      headers.push("ScrInc");
+      headers.push("Script Inc");
       values.push(ns.getScriptIncome().toPrecision(5) + '/sec');
 
       hook0.innerText = headers.join(" \n");
