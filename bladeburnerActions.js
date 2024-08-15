@@ -54,6 +54,7 @@ export async function main(ns) {
       if (currentStamina < 0.9 * maxStamina) {
         isActionStarted = ns.bladeburner.startAction("general", "Hyperbolic Regeneration Chamber")
         ns.print(`stamina regen: due to ${ ns.nFormat(currentStamina / maxStamina * 100, "0.00a") }% stamina level`)
+        await ns.sleep(62000)
         continue
       } else {
         if (currentAction.name === "Hyperbolic Regeneration Chamber") {

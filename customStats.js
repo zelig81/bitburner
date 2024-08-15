@@ -13,7 +13,7 @@ export async function main(ns) {
       headers.push("ScrExp");
       values.push(ns.getTotalScriptExpGain().toPrecision(5) + '/sec');
       headers.push("ScrInc");
-      values.push(ns.getScriptIncome()[0].toPrecision(5) + '/sec');
+      values.push(ns.getScriptIncome().toPrecision(5) + '/sec');
 
       hook0.innerText = headers.join(" \n");
       hook1.innerText = values.join("\n");

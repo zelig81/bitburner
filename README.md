@@ -14,6 +14,7 @@ run _runner.js 22 500000
 
 ## todo
 
+- ! while buying for nethack servers - check use money is less then 1/4 of hack exe's, else wait and purchase hack exe
 - add scheduler:
   - runner (raise limits?)
   - customUI
