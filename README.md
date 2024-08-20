@@ -58,3 +58,14 @@ run _runner.js 22 500000
 - max ram from 1Gi: 4.7m
 - max core from 1: 345m
 - outcome from fully upgraded node: 26k/sec == 93m/hour
+
+## gangs
+
+- start gang when crime rate < -54k
+- get new members
+- train
+- get equipment per money level
+- ascend (find formula), renew equipment after that
+- territory wars?
+- reputation?
+-

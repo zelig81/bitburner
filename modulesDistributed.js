@@ -6,7 +6,7 @@
 const enabledNetManager = true
 const singularityFunctionsAvailable = true;
 const areHacknetServersAccessible = false
-const isSleevesAvailable = true
+const isSleevesAvailable = false
 const maxHacknetSpend = 2e12
 
 // hack severs for this much of their money
@@ -382,7 +382,7 @@ function manageAndHack(ns, freeRams, servers, targets, growStocks, hackStocks) {
           addedHackSecurity = hackThreads * hackThreadSecurityIncrease;
           hackReGrowRatio = 1 / (1 - reducedHackMoneyRatio);
           overallGrowRatio = initialGrowRatio * hackReGrowRatio;
-          growThreads = Math.floor((ns.growthAnalyze(target, overallGrowRatio, 0)));
+          growThreads = Math.floor((ns.growthAnalyze(target, overallGrowRatio, 1)));
           addedGrowSecurity = growThreads * growThreadSecurityIncrease;
 
           weakThreads = Math.floor((secDiff + addedGrowSecurity + addedHackSecurity) * 20);
@@ -740,7 +740,7 @@ async function scanAndNuke(ns) {
   scanAll(ns, "home", servers);
   var accessibleServers = new Set();
   for (let server of servers) {
-    if (server.startsWith("hacknet-node")) {
+    if (server.startsWith("hacknet-server")) {
       if (
         getHacknetRatioToSpend(ns) > 100 &&
         areHacknetServersAccessible &&

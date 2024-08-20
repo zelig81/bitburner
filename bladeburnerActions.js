@@ -22,6 +22,7 @@ export async function main(ns) {
     if (isJoinedDivision) {
       ns.bladeburner.joinBladeburnerFaction()
       let currentAction = ns.bladeburner.getCurrentAction() // type, name
+      // ns.print(`current type: ${ currentAction?.type }`)
       let hasUpgrades = true
       while (hasUpgrades) {
         let skillToUpgrade = "Overclock"
@@ -57,7 +58,7 @@ export async function main(ns) {
         await ns.sleep(62000)
         continue
       } else {
-        if (currentAction.name === "Hyperbolic Regeneration Chamber") {
+        if (currentAction?.name === "Hyperbolic Regeneration Chamber") {
           ns.bladeburner.stopBladeburnerAction()
         }
       }
@@ -71,7 +72,7 @@ export async function main(ns) {
         let myRank = ns.bladeburner.getRank()
         let requiredRank = ns.bladeburner.getBlackOpRank(action)
         if (!isActionStarted && minChance > 0.95 && myRank > requiredRank && count > 0) {
-          if (currentAction == null || currentAction.type !== "BlackOp") {
+          if (currentAction == null || currentAction.type !== "Black Operations") {
             isActionStarted = ns.bladeburner.startAction(type, action)
             if (isActionStarted) {
               ns.print(`blackop started: ${ action }`)

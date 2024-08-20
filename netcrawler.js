@@ -15,7 +15,7 @@ export async function main(ns) {
 /** @param {NS} ns **/
 function crawl(ns, node, nodeMap) {
   node.neighbors.forEach(nodeName => {
-    if (nodeMap.has(nodeName)) {
+    if (nodeMap.has(nodeName) || String(nodeName).startsWith("server-") || String(nodeName).startsWith("hacknet-")) {
       return;
     }
     let newNode = new Object();
@@ -31,7 +31,7 @@ function crawl(ns, node, nodeMap) {
 function printMap(ns, node, nodeMap, indent) {
   let server = ns.getServer(node.name)
   let serverStatus = server.backdoorInstalled ? "B" : (server.hasAdminRights ? "R" : "-")
-  ns.tprintf(`${ indent }${ node.name }(${ serverStatus }|${ server.numOpenPortsRequired }|${ server.requiredHackingSkill }|${server.maxRam}GB|${ ns.nFormat(server.moneyMax, "$0.0a")})`);
+  ns.tprintf(`${ indent }${ node.name }(${ serverStatus }|${ server.numOpenPortsRequired || "0" }p|${ server.requiredHackingSkill || "0" }>|${ ns.formatRam(server.maxRam) }|${ new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumSignificantDigits: 3 }).format(server.moneyMax)})`);
   nodeMap.delete(node.name);
   indent = adjustIndent(indent, node, nodeMap);
   printIndent(ns, indent, node);

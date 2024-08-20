@@ -11,11 +11,11 @@ const isHomeComputerUpgradeEnabled = true
 - learn hacking
 - program creation for start
 - crime/company work for initial money till ram upgrad/home servers can be purchased
-  - gym? for homicide
-  - homicide till 30 kills
+  - gym? for Homicide
+  - Homicide till 30 kills
 - faction work (without 150 favors)
 - company work by list
-- crime kidnap if no other job
+- crime best=Kidnap or other if no other job
 */
 
 const megaCorps = [
@@ -35,11 +35,11 @@ const cityFactions = ["Sector-12", "Chongqing", "New Tokyo", "Ishima", "Aevum", 
 
 const crimes = [
   // "Shoplift",
-  "ASSASSINATION",
-  "HOMICIDE",
-  "KIDNAP",
-  "MUG",
-  "ROBSTORE",
+  // "ASSASSINATION",
+  "Homicide",
+  "Kidnap",
+  "Mug",
+  "Rob Store",
   // "Larceny",
   // "Deal Drugs",
   // "Bond Forgery",
@@ -319,15 +319,15 @@ function currentActionUseful(ns, factions) {
         return true;
       }
     }
-    if (currentWork.type === "CRIME") {
+    if (currentWork.type === "CRIME") { // crime is wrong type - but only if there is no something other interesting to do
       for (let crime of crimes) {
         let crimeChance = ns.singularity.getCrimeChance(crime);
         if (
-          (currentWork.crimeType == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
-          (currentWork.crimeType == "MUG" && player.money < 9e6) ||
-          (currentWork.crimeType == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
-          (currentWork.crimeType == "HOMICIDE" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
-          (currentWork.crimeType == "KIDNAP" && crimeChance > 0.25) // best for intelligence and time to skills
+          // (currentWork.crimeType == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) ||
+          // (currentWork.crimeType == "Mug" && player.money < 9e6) ||
+          // (currentWork.crimeType == "Rob Store" && crimeChance > 0.5 && player.money < 9e6) ||
+          // (currentWork.crimeType == "Kidnap" && crimeChance > 0.25) || // best for intelligence and time to skills
+          (currentWork.crimeType == "Homicide" && player.numPeopleKilled < 30 && crimeChance > 0.98)
         ) {
           return true;
         }
@@ -510,32 +510,31 @@ function commitCrime(ns) {
   let player = ns.getPlayer()
   // Calculate the risk value of all crimes
 
-  var bestCrime = "Kidnap and Ransom";
+  var bestCrime = "not-defined";
   var bestCrimeValue = 0;
   var bestCrimeStats = {};
   for (let crime of crimes) {
     let crimeChance = ns.singularity.getCrimeChance(crime);
     var crimeStats = ns.singularity.getCrimeStats(crime);
-    if (crime == "ASSASSINATION" && player.numPeopleKilled < 30 && crimeChance > 0.98) {
-      bestCrime = "ASSASSINATION";
+    if (crime == "Kidnap" && crimeChance > 0.5) {
+      bestCrime = "Kidnap";
       bestCrimeStats = crimeStats;
       break;
-    } else if (crime == "HOMICIDE" && player.numPeopleKilled < 30 && crimeChance > 0.98) {
-      bestCrime = "HOMICIDE";
+    } else if (crime == "Homicide" && crimeChance > 0.98) {
+      bestCrime = "Homicide";
       bestCrimeStats = crimeStats;
       break;
-    } else if (crime == "KIDNAP" && crimeChance > 0.5) {
-      bestCrime = "KIDNAP";
+    } else if (crime == "Mug" && crimeChance > 0.5 && player.money < 9e6) {
+      bestCrime = "Mug";
       bestCrimeStats = crimeStats;
       break;
-    } else if (crime == "MUG" && crimeChance > 0.5 && player.money < 9e6) {
-      bestCrime = "MUG";
+    } else if (crime == "Rob Store" && crimeChance > 0.5 && player.money < 9e6) {
+      bestCrime = "Rob Store";
       bestCrimeStats = crimeStats;
       break;
-    } else if (crime == "ROBSTORE" && crimeChance > 0.5 && player.money < 9e6) {
-      bestCrime = "ROBSTORE";
+    } else {
+      bestCrime = "Shoplift";
       bestCrimeStats = crimeStats;
-      break;
     }
 
     var crimeValue = 0;
@@ -552,8 +551,6 @@ function commitCrime(ns) {
     if (player.agility < combatStatsGoal) {
       crimeValue += 1e5 * crimeStats.agility_exp;
     }
-    // crimeValue += crimeStats.money;
-    //ns.print(ns.nFormat(crimeChance,"0.00a")+"/"+ns.nFormat(crimeStats.time,"000a")+"|"+crimeStats.strength_exp + "|" + crimeStats.defense_exp + "|" + crimeStats.dexterity_exp + "|" + crimeStats.agility_exp + "|" + ns.nFormat(crimeStats.money,"0a")+"|"+crime);
     crimeValue = crimeValue * crimeChance / (crimeStats.time + 10);
     if (crimeValue > bestCrimeValue) {
       bestCrime = crime;

@@ -9,7 +9,7 @@ export async function main(ns) {
       const headers = []
       const values = [];
       headers.push("Karma");
-      values.push(ns.heart.break());
+      values.push(ns.heart.break().toPrecision(1));
       headers.push("Script Exp");
       values.push(ns.getTotalScriptExpGain().toPrecision(5) + '/sec');
       headers.push("Script Inc");
